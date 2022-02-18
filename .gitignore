@@ -1,0 +1,9 @@
+/.idea/
+/data/
+/other_codes/
+/main.py
+
+/price_predict/data/
+#/price_predict/.idea/
+#/price_predict/.pytest_cache/
+/price_predict/test/
