@@ -61,11 +61,83 @@ class GetData():
 
 
     def get_derivative_open(self):
+        self.data['next_close'] = self.data['close'].shift(-1)
         self.data['next_open'] = self.data['open'].shift(-1)  # 第二天的开盘价
         self.data['d_open'] = self.data['next_open'] - self.data['open']
-        self.data['ret'] = np.log(self.data['open'] / self.data['open'].shift(1))
-        self.data['next_ret'] = self.data['ret'].shift(-1)  # 未来/下期 收益率
+        # self.data['ret'] = np.log(self.data['open'] / self.data['open'].shift(1))
+        self.data['next_ret'] = (self.data['next_close'] - self.data['next_open']) / self.data['next_open']  #self.data['ret'].shift(-1)  # 未来/下期 收益率
+        self.data['log_next_ret'] = np.log(self.data['next_close'] / self.data['next_open'])
         return self.data
+
+    def get_overlap(self):
+        overlap_ind = pd.DataFrame(index=self.data.index)
+        # 一、重叠研究（overlap studies）
+        # 1.简单移动平均指标SMA
+        # 参数说明：talib.SMA(a,b)
+        # a:要计算平均数的序列；b:计算平均线的周期。表示计算a的b日移动平均
+        close = self.data['close'].values
+        overlap_ind['SMA'] = tb.SMA(close, 5)
+
+        # 2.布林线BBANDS
+        # 参数说明：talib.BBANDS(close, timeperiod, matype)
+        # close:收盘价；timeperiod:周期；matype:平均方法(bolling线的middle线 = MA，用于设定哪种类型的MA)
+        # MA_Type: 0=SMA, 1=EMA, 2=WMA, 3=DEMA, 4=TEMA, 5=TRIMA, 6=KAMA, 7=MAMA, 8=T3 (Default=SMA)
+        overlap_ind['upper'], overlap_ind['middle'], overlap_ind['lower'] = tb.BBANDS(close, 5, matype=tb.MA_Type.EMA)
+
+        # 3. DEMA 双移动平均线:DEMA = 2*EMA-EMA(EMA)
+        # 参数说明：talib.DEMA(close, timeperiod = 30)
+        overlap_ind['DEMA'] = tb.DEMA(close, timeperiod=30)
+
+        # 4. MA
+        # 参数说明：MA(close, timeperiod = 30, matype=0)
+        # close:收盘价；timeperiod:周期；matype:计算平均线方法
+        overlap_ind['MA'] = tb.MA(close, timeperiod=30, matype=0)
+
+        # 5. EMA
+        # 参数说明：EMA = talib.EMA(np.array(close), timeperiod=6)
+        # close:收盘价；timeperiod:周期；matype:计算平均线方法
+        overlap_ind['EMA'] = tb.EMA(np.array(close), timeperiod=6)
+
+        # 6.KAMA：考夫曼的自适应移动平均线
+        # 参数说明：KAMA = talib.KAMA(close, timeperiod = 30)
+        overlap_ind['KAMA'] = tb.KAMA(close, timeperiod=30)
+
+        # 7. MIDPRICE：阶段中点价格
+        # talib.MIDPOINT(close, timeperiod)
+        # 参数说明：close:收盘价；timeperiod:周期；
+        overlap_ind['MIDPOINT'] = tb.MIDPOINT(close, timeperiod=14)
+
+        # 8.SAR：抛物线指标
+        # SAR(high, low, acceleration=0, maximum=0)
+        # 参数说明：high：最高价；low:最低价；acceleration：加速因子；maximum：极点价
+        overlap_ind['SAR'] = tb.SAR(self.data['high'].values, self.data['low'].values, acceleration=0, maximum=0)
+
+        # 9.MIDPRICE：阶段中点价格（Midpoint Price over period）
+        # talib.MIDPOINT(close, timeperiod=14)
+        # 参数说明：close:收盘价；timeperiod:周期；
+        overlap_ind['MIDPOINT'] = tb.MIDPOINT(close, timeperiod=14)
+
+        # 10. T3:三重移动平均线
+        # talib.T3(close, timeperiod=5, vfactor=0)
+        # 参数说明：close:收盘价；timeperiod:周期；vfactor: va 系数，当va=0时，T3就是三重移动平均线；va=1时，就是DEMA
+        overlap_ind['T3'] = tb.T3(close, timeperiod=5, vfactor=0)
+
+        # 11.TEMA：三重指数移动平均线
+        # talib.TEMA(close, timeperiod = 30)
+        # 参数说明：close:收盘价；timeperiod:周期；
+        overlap_ind['TEMA'] = tb.TEMA(close, timeperiod=30)
+
+        # 12.SAREXT:SAR的抛物面扩展
+        # talib.SAREXT(high_p, low_p, startvalue=0, offsetonreverse=0, accelerationinitlong=0, accelerationlong=0, accelerationmaxlong=0, accelerationinitshort=0, accelerationshort=0, accelerationmaxshort=0)
+        overlap_ind['SAREXT'] = tb.SAREXT(self.data['high'].values, self.data['low'].values, startvalue=0, offsetonreverse=0,
+                              accelerationinitlong=0, accelerationlong=0, accelerationmaxlong=0,
+                              accelerationinitshort=0, accelerationshort=0, accelerationmaxshort=0)
+
+        # 13.WMA：移动加权平均法
+        # talib.WMA(close, timeperiod = 30)
+        # 参数说明：close:收盘价；timeperiod:周期；
+        overlap_ind['WMA'] = tb.WMA(close, timeperiod=30)
+        return overlap_ind
 
     def get_volotility_factor(self):
         # 真实波动率 ATR(high, low, close, timeperiod=14)
@@ -117,6 +189,97 @@ class GetData():
                                    'MINUS_DM', 'fastk', 'fastd'])
         return mom_data
 
+    def get_cycle(self):
+        cycle_data = pd.DataFrame(index=self.data.index)
+        # 三、 周期指标
+        # 1.HT_DCPERIOD：希尔伯特变换-主导周期
+        # HT_DCPERIOD(close)
+        # 参数说明：close:收盘价
+        cycle_data['HT_DCPERIOD'] = tb.HT_DCPERIOD(self.data['close'])
+
+        # 2.HT_DCPHASE：希尔伯特变换-主导循环阶段
+        # HT_DCPHASE(close)
+        # 参数说明：close:收盘价
+        cycle_data['HT_DCPHASE'] = tb.HT_DCPHASE(self.data['close'])
+
+        # 3.HT_PHASOR：希尔伯特变换-希尔伯特变换相量分量
+        # inphase, quadrature = HT_PHASOR(close)
+        # 参数说明：close:收盘价
+        cycle_data['HT_PHASOR_inphase'], cycle_data['HT_PHASOR_quadrature'] = tb.HT_PHASOR(self.data['close'])
+
+        # 4.HT_SINE：希尔伯特变换-正弦波
+        # sine, leadsine = HT_SINE(close)
+        # 参数说明：close:收盘价
+        cycle_data['HT_SINE_sine'], cycle_data['HT_SINE_leadsine'] = tb.HT_SINE(self.data['close'])
+
+        # 5.HT_TRENDMODE：希尔伯特变换-趋势与周期模式
+        # integer = HT_TRENDMODE(close)
+        # 参数说明：close:收盘价
+        cycle_data['HT_TRENDMODE'] = tb.HT_TRENDMODE(self.data['close'])
+
+        # 四、价格变化函数
+        # 1. AVGPRICE：平均价格函数
+        # real = AVGPRICE(open, high, low, close)
+        cycle_data['AVGPRICE'] = tb.AVGPRICE(self.data['open'].values, self.data['high'].values, self.data['low'].values, self.data['close'])
+
+        # 2. MEDPRICE:中位数价格
+        # real = MEDPRICE(high, low)
+        # 参数说明：high:最高价；low:最低价；
+        cycle_data['MEDPRICE'] = tb.MEDPRICE(self.data['high'].values, self.data['low'].values)
+
+        # 3. TYPPRICE ：代表性价格
+        # real = TYPPRICE(high, low, close)
+        # 参数说明：high:最高价；low:最低价；close：收盘价
+        cycle_data['TYPPRICE'] = tb.TYPPRICE(self.data['high'].values, self.data['low'].values, self.data['close'])
+
+        # 4. WCLPRICE ：加权收盘价
+        # real = WCLPRICE(high, low, close)
+        # 参数说明：high:最高价；low:最低价；close：收盘价
+        cycle_data['WCLPRICE'] = tb.WCLPRICE(self.data['high'].values, self.data['low'].values, self.data['close'])
+
+        return cycle_data
+
+    def get_statistic(self):
+        stat_data = pd.DataFrame(index=self.data.index)
+        # 七、Statistic Functions 统计学指标
+        # 1. BETA：β系数也称为贝塔系数
+        # real = BETA(high, low, timeperiod=5)
+        stat_data['BETA'] = tb.BETA(self.data['high'].values, self.data['low'].values, timeperiod=5)
+
+        # 2. CORREL ：皮尔逊相关系数
+        # real = CORREL(high, low, timeperiod=30)
+        stat_data['CORREL'] = tb.CORREL(self.data['high'].values, self.data['low'].values, timeperiod=30)
+
+        # 3.LINEARREG ：线性回归
+        # real = LINEARREG(close, timeperiod=14)
+        stat_data['LINEARREG'] = tb.LINEARREG(self.data['close'], timeperiod=14)
+
+        # 4.LINEARREG_ANGLE ：线性回归的角度
+        # real = LINEARREG_ANGLE(close, timeperiod=14)
+        stat_data['LINEARREG_ANGLE'] = tb.LINEARREG_ANGLE(self.data['close'], timeperiod=14)
+
+        # 5. LINEARREG_INTERCEPT ：线性回归截距
+        # real = LINEARREG_INTERCEPT(close, timeperiod=14)
+        stat_data['LINEARREG_INTERCEPT'] = tb.LINEARREG_INTERCEPT(self.data['close'], timeperiod=14)
+
+        # 6.LINEARREG_SLOPE：线性回归斜率指标
+        # real = LINEARREG_SLOPE(close, timeperiod=14)
+        stat_data['LINEARREG_SLOPE'] = tb.LINEARREG_SLOPE(self.data['close'], timeperiod=14)
+
+        # 7.STDDEV ：标准偏差
+        # real = STDDEV(close, timeperiod=5, nbdev=1)
+        stat_data['STDDEV'] = tb.STDDEV(self.data['close'], timeperiod=5, nbdev=1)
+
+        # 8.TSF：时间序列预测
+        # real = TSF(close, timeperiod=14)
+        stat_data['TSF'] = tb.TSF(self.data['close'], timeperiod=14)
+
+        # 9. VAR：方差
+        # real = VAR(close, timeperiod=5, nbdev=1)
+        stat_data['VAR'] = tb.VAR(self.data['close'], timeperiod=5, nbdev=1)
+        return stat_data
+
+
     def get_volume_indicators(self):
         # 1. AD:量价指标
         # 参数说明：high:最高价；low:最低价；close:收盘价,volume:成交量
@@ -130,17 +293,20 @@ class GetData():
         vi_data = pd.concat([AD, ADOSC, OBV], axis=1, keys=['AD', 'ADOSC', 'OBV'])
         return vi_data
 
-    def data_analyse(self, target='next_ret'):
+    def data_analyse(self, target=['next_ret']):
         self.get_derivative_open()
 
         # 获取各种动量指标、波动率指标
         vol_data = self.get_volotility_factor()
         mom_data = self.get_momentum_indicators()
-        # vi_data = self.get_volume_indicators()
+        vi_data = self.get_volume_indicators()
+        overlap_data = self.get_overlap()
+        stat_data = self.get_statistic()
 
-        features = list(vol_data.columns) + list(mom_data.columns)
-        corr_col = features + [target]
-        self.data = pd.concat([vol_data, mom_data, self.data], axis=1)
+        features = list(vol_data.columns) + list(mom_data.columns) + list(vi_data.columns) + list(overlap_data.columns) \
+                   + list(stat_data.columns) + ['volume']
+        corr_col = features + target
+        self.data = pd.concat([vol_data, mom_data, vi_data, overlap_data, stat_data, self.data], axis=1)
         print('correlation: \n', self.data[corr_col].corr())
         self.save_final_data()
         return self.data
@@ -179,9 +345,9 @@ def paint_relation(indx, data1, data2, label1='data1', label2='data2'):
 if __name__ == '__main__':
     # 获取数据
     get_data = GetData(file_path=r"C:\pythonProj\data\price_pred\btc_data_200101_220208.csv", freq=1)
-    train_data = get_data.data_analyse(target='next_ret')
+    train_data = get_data.data_analyse(target=['next_ret', 'log_next_ret'])
 
-    target = 'next_ret'
-    feat_list = ['BOP', 'CCI', 'CMO', 'fastk', 'fastd', 'MINUS_DI', 'ATR', 'NATR', 'TRANGE', 'volume']
-    for i in feat_list:
-        paint_relation(train_data.index, train_data[target], train_data[i], target, i)
+    # target = 'next_ret'
+    # feat_list = ['BOP', 'CCI', 'CMO', 'fastk', 'fastd', 'MINUS_DI', 'ATR', 'NATR', 'TRANGE', 'volume']
+    # for i in feat_list:
+    #     paint_relation(train_data.index, train_data[target], train_data[i], target, i)

@@ -40,7 +40,7 @@
     git remote -v
 
 - 转换远程分支url（eg.从http到ssh）\
-    git remote set-url origin git@github.com:<用户名>/<仓库名>.git
+    git remote set-url <origin> git@github.com:<用户名>/<仓库名>.git
 
 - 将本地仓库同步到远程仓库\
     git push -u <origin master>\
