@@ -7,3 +7,5 @@
 #/price_predict/.idea/
 #/price_predict/.pytest_cache/
 /price_predict/test/
+
+/order_analyse/else/

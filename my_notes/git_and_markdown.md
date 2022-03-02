@@ -43,8 +43,13 @@
     git remote set-url <origin> git@github.com:<用户名>/<仓库名>.git
 
 - 将本地仓库同步到远程仓库\
-    git push -u <origin master>\
-    同步的时候需要注意几点：
+  - 若 **本地分支名** 与 **远程仓库分支名** 相同
+      git push -u <origin master>\
+  - 若 **本地分支名** 与 **远程仓库分支名** 不同
+      git push <origin远程仓库名> <localBranchName>:<remoteBranchName>
+      如 git push gitlab gitlab:main
+
+- 同步的时候需要注意几点：
     - 第一、需要将远端的地址记录在本地\
     git remote add origin 仓库地址（直接在github仓库网页的地址栏复制即可）
     - 第二、第一次提交远端时，远端会认为这是无关的仓库，所以需要先关联一下\

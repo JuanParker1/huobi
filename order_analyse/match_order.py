@@ -63,7 +63,7 @@ class MathchOrder():
     def match(self):
         self.matched_data = pd.DataFrame(index=self.neworders.index,
                                          columns=['side', 'quote_coin', 'base_coin', 'client_id', 'base_amount', 'price',
-                                            'exec_place_time', 'exec_price', 'match'])
+                                            'exec_place_time', 'exec_price', 'exec_base_amount', 'exec_algo', 'match'])
         self.matched_data[['side', 'quote_coin', 'base_coin', 'client_id', 'base_amount', 'price']] = self.neworders[
             ['side','quote_coin', 'base_coin', 'client_id', 'base_amount', 'price']]
         # 开始逐条匹配
@@ -93,6 +93,9 @@ class MathchOrder():
                     self.matched_data['match'].iloc[i] = 'ALMOST'
                 self.matched_data['exec_place_time'].iloc[i] = candidate.index.values[0]  # candidate['exec_place_time']
                 self.matched_data['exec_price'].iloc[i] = candidate['exec_price'].values[0]
+                self.matched_data['exec_base_amount'].iloc[i] = candidate['exec_base_amount'].values[0]
+                self.matched_data['exec_algo'].iloc[i] = candidate['exec_algo'].values[0]
+
                 # print(self.matched_data.iloc[i])
         return self.matched_data
 
