@@ -156,7 +156,7 @@ def analyse_volatility(matched, forward_hour):
 
         # for client in [11, 18]:
         #     piece = match_data[match_data['client_id'] == client]
-        type_c = {11:'线上服务', 18:'线下服务'}
+        type_c = {11:'线下服务', 18:'线上服务'}
         for client in [11, 18]:
             piece = match_data[match_data['client_id'] == client]
             vol_temp[type_c[client]][f'BTC现货{forward_hour}h波动率'] = piece['btc_vol_{}h_ahead'.format(forward_hour)].mean()
@@ -209,6 +209,20 @@ def get_exec_type(data):
         exec_type[i]['alameda'] = piece[piece['exec_algo'] == 'alameda'].shape[0] / len(piece)
     return exec_type
 
+def get_exec_type_and_ret(data):
+    # twap 代表是现货交易, 用 otchedge 代表是用合约交易
+    exec_type = {'总': {}, '现货交易': {}, '合约交易': {}, 'alameda':{}}
+    exec_type['总']['盈利订单'] = len(data[data['d_amount'] >= 0]) / len(data)
+    exec_type['总']['亏损订单'] = len(data[data['d_amount'] < 0]) / len(data)
+
+    type_c = {'现货交易': 'twap', '合约交易': 'otchedge', 'alameda': 'alameda'}
+    for i in ['现货交易', '合约交易', 'alameda']:
+        piece = data[data['exec_algo'] == type_c[i]]
+        exec_type[i]['盈利订单'] = piece[piece['d_amount'] >= 0].shape[0] / len(piece)
+        exec_type[i]['亏损订单'] = piece[piece['d_amount'] < 0].shape[0] / len(piece)
+
+    return exec_type
+
 def analyse_exec_type_():
     type_dict = {}
     for client in [11, 18]:
@@ -231,7 +245,7 @@ def analyse_exec_type():
         type_temp['总']['alameda'] = len(match_data[match_data['exec_algo'] == 'alameda']) / len(match_data)
         # for client in [11, 18]:
         #     piece = match_data[match_data['client_id'] == client]
-        type_c = {11: '线上服务', 18: '线下服务'}
+        type_c = {11: '线下服务', 18: '线上服务'}
         for client in [11, 18]:
             piece = match_data[match_data['client_id'] == client]
             type_temp[type_c[client]]['现货交易'] = piece[piece['exec_algo'] == 'twap'].shape[0] / len(piece)
@@ -252,7 +266,10 @@ if __name__ == "__main__":
     # # #
     matched = compare_price(matched)
     # analyse_return(matched)
-
+    e_type = get_exec_type_and_ret(matched)
+    pd.DataFrame.from_dict(e_type).to_excel(r'C:\pythonProj\data\match_order\e_type.xlsx')
+    print(pd.DataFrame.from_dict(e_type))
+    a==a
 
     # quote_accept_time 设为index
     # start_ts = matched.index.min() // 1000 - forward_hour * 3600  # 向下取整

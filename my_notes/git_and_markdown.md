@@ -24,8 +24,8 @@
     git commit -m "description"
 
 - 撤回，退回到以提交过的任意版本：\
-    git reset --hard <xxx>
-    > 其中<xxx>为某次提交的哈希值，可以使用git log或git reflog查看
+    git reset --hard \<xxx>
+    > 其中\<xxx>为某次提交的哈希值，可以使用git log或git reflog查看
 
 ### 1.3	远程仓库
 - 添加远程仓库\
@@ -66,6 +66,7 @@
 
 - 克隆项目\
     git clone url
+    或 git clone url 本地路径（为新建文件夹/空文件夹）
 
 ### 1.4	分支
 - 新建分支\
@@ -105,6 +106,65 @@
     vim <file>
     > 修改完后按 esc 键退出编辑模式后，输入”:wq”，保存修改并退出
 
+## 2. 案例：创建新仓库
+
+git init 
+git remote add 仓库名 url
+git add .
+git commit -m "first commit"
+git push -u 仓库名 分支名
+
+## 3. 案例：多个git账号管理
+https://blog.csdn.net/u010250240/article/details/101627640
+
+在电脑的.ssh文件夹下(比如我的路径是C:\Users\shao\.ssh)新建一个名为config的文件，没有后缀。
+在其中写入：\
+
+```
+#Host: 服务器(自己的辨识标识，可以随便写)
+#HostName: 主机名或域名，建议使用域名(仓库的host地址)
+#User: 仓库的用户名或者邮箱
+#IdentityFile: rsa文件路径(对应的秘钥存储路径)
+#PreferredAuthentications publickey: 让ssh只使用publickey方式去验证,若失败就直接跳过密码登录
+
+#github
+Host github.com
+HostName github.com
+User a
+IdentityFile ~/.ssh/github_id_rsa
+PreferredAuthentications publickey
+
+#gitee
+Host gitee.com
+HostName gitee.com
+User b
+IdentityFile ~/.ssh/gitee_id_rsa
+
+#gitlab
+Host gitlab.com
+HostName gitlab.com
+User c
+IdentityFile ~/.ssh/gitlab_id_rsa
+```
+
+打开Git Bash\
+1、清除 git 的全局设置（新安装git可以跳过）\
+
+git  config --global --unset user.name 
+git  config  --global --unset user.email 
+
+2、为每一个账号都生成一对秘钥（私钥和公钥）\
+为账号 a 生成秘钥(上面config里的邮箱)：
+
+ssh-keygen -t rsa -C "邮箱"
+
+注意：弹出的路径要写 绝对路径
+
+3、将后缀的.pub的公钥分别添加到不同平台的ssh公钥里面。
+
+4、最后是测试\
+ssh -T git@对应的服务器地址（也就是config里填的Host后面的内容）
+如果你是Host gitee_test，那么测试的时候就这样：ssh -T git@gitee_test。
 
 ## 2. 常见报错
 ### 2.1	error: failed to push some refs to '.......'
@@ -239,4 +299,20 @@ e=>end
 st->op->cond
 cond(yes)->e
 cond(no)->op
-&```
+```
+
+
+```mermaid
+graph TD
+A[方形] --> B(圆角)
+    B --> C{条件a}
+    C --> |a=1| D[结果1]
+    C --> |a=2| E[结果2]
+    F[竖向流程图]
+```
+
+### 1.8 注释
+
+在正文中不显示：\
+\<!-- your comment goes here -->
+<!-- 这里不会显示 -->
