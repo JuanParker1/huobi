@@ -61,11 +61,11 @@ class MathchOrder():
 
 
     def match(self):
-        self.matched_data = pd.DataFrame(index=self.neworders.index,
-                                         columns=['side', 'quote_coin', 'base_coin', 'client_id', 'base_amount', 'price',
-                                            'exec_place_time', 'exec_price', 'exec_base_amount', 'exec_algo', 'match'])
-        self.matched_data[['side', 'quote_coin', 'base_coin', 'client_id', 'base_amount', 'price']] = self.neworders[
-            ['side','quote_coin', 'base_coin', 'client_id', 'base_amount', 'price']]
+        self.matched_data = pd.DataFrame(index=self.neworders.index, columns=
+                        ['id', 'side', 'quote_coin', 'base_coin', 'client_id', 'base_amount', 'price',
+                        'exec_place_time', 'exec_price', 'exec_base_amount', 'exec_algo', 'match'])
+        self.matched_data[['id','side', 'quote_coin', 'base_coin', 'client_id', 'base_amount', 'price']] = \
+            self.neworders[['id','side','quote_coin', 'base_coin', 'client_id', 'base_amount', 'price']]
         # 开始逐条匹配
         for i in range(len(self.neworders)):
             target = self.neworders[['side', 'quote_coin', 'base_coin', 'client_id', 'base_amount']].iloc[i, :]
@@ -100,7 +100,7 @@ class MathchOrder():
         return self.matched_data
 
 
-def analyse_price(match_data):
+def get_all_matched_data():
     pass
 
 
