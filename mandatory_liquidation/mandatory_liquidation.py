@@ -1,3 +1,17 @@
+"""
+强平模拟
+
+滚动模拟 6/3 个月，看在不同持仓分布及市场情况下，现有强平策略是否会造成损失。
+
+Class & Function
+    Class：
+        Coin  进行币种层次的操作，如：更新每个币种 每一期的价值；对单个币进行强平
+        Tier  进行tier层次的操作，如：更新整个tier的每期价值；对整个tier进行强平
+        Trade 进行账户层次的操作，如：更新整个账户的煤气价值；计算risk rate并判断需要对哪个tier进行强平
+
+    Function:
+        monitor 强平模拟器，调用上述的类进行滚动强平模拟
+"""
 import time
 
 import numpy as np
@@ -7,24 +21,25 @@ from other_codes.get_historical_data.huobi_data import Huobi_kline
 from paint import paint_result
 
 
+coins = ['btcusdt', 'ethusdt', 'trxusdt', 'shibusdt', 'solusdt', 'dotusdt',
+        'filusdt', 'dogeusdt', 'adausdt', 'linkusdt', 'sandusdt', 'ltcusdt',
+        'avaxusdt', 'eosusdt', 'bchusdt', 'uniusdt', 'sushiusdt', 'aaveusdt',
+        'etcusdt', 'crousdt', 'axsusdt', 'zecusdt', 'xlmusdt', 'bsvusdt',
+        'dashusdt', '1inchusdt', 'xmrusdt', 'compusdt',
+        'iotausdt', 'sklusdt', 'paxusdt', 'wbtcusdt']
+
+
 def get_trade_data(target='btcusdt', start_time=None, end_time=None, period='5min'):
     tradedata = Huobi_kline(symbol=target, period=period, start_time=start_time, end_time=end_time,
                             get_full_market_data=True, col_with_asset_name=False)
     print(tradedata)
-    tradedata.to_csv(
-        'C:/pythonProj/data/mandatory_liquidation/origin_data/{}_{}_{}_to_{}.csv'.format(target, period, start_time,
-                                                                                         end_time))
+    tradedata.to_csv('C:/pythonProj/data/mandatory_liquidation/origin_data/{}_{}_{}_to_{}.csv'.format(target, period,
+                                                                                                      start_time,
+                                                                                                      end_time))
     return tradedata
 
 
 def download_all_coin_data():
-    coins = ['btcusdt', 'ethusdt', 'trxusdt', 'shibusdt', 'solusdt', 'dotusdt',
-             'filusdt', 'dogeusdt', 'adausdt', 'linkusdt', 'sandusdt', 'ltcusdt',
-             'avaxusdt', 'eosusdt', 'bchusdt', 'uniusdt', 'sushiusdt', 'aaveusdt',
-             'etcusdt', 'crousdt', 'axsusdt', 'zecusdt', 'xlmusdt', 'bsvusdt',
-             'dashusdt', '1inchusdt', 'xmrusdt', 'compusdt',
-             'iotausdt', 'sklusdt', 'paxusdt', 'wbtcusdt']
-
     # 生成 timestamp
     start_time = int(time.mktime((2021, 5, 12, 0, 0, 0, 0, 0, 0)))
     end_time = int(time.mktime((2022, 3, 12, 0, 0, 0, 0, 0, 0)))
@@ -38,12 +53,6 @@ def get_four_tiers():
     """
     Returns: 四个 tier (字典形式，含字段 { coin, percent, slippage})
     """
-    coins = ['btcusdt', 'ethusdt', 'trxusdt', 'shibusdt', 'solusdt', 'dotusdt',
-             'filusdt', 'dogeusdt', 'adausdt', 'linkusdt', 'sandusdt', 'ltcusdt',
-             'avaxusdt', 'eosusdt', 'bchusdt', 'uniusdt', 'sushiusdt', 'aaveusdt',
-             'etcusdt', 'crousdt', 'axsusdt', 'zecusdt', 'xlmusdt', 'bsvusdt',
-             'dashusdt', '1inchusdt', 'xmrusdt', 'compusdt',
-             'iotausdt', 'sklusdt', 'paxusdt', 'wbtcusdt']
     tier_perc = [.4, .3, .2, .1]
     slippage_list = [.0003, .0006, .0008, .001]
 
@@ -71,12 +80,6 @@ def get_random_proportion(num):
 
 
 def load_all_coin_data_to_dict():
-    coins = ['btcusdt', 'ethusdt', 'trxusdt', 'shibusdt', 'solusdt', 'dotusdt',
-             'filusdt', 'dogeusdt', 'adausdt', 'linkusdt', 'sandusdt', 'ltcusdt',
-             'avaxusdt', 'eosusdt', 'bchusdt', 'uniusdt', 'sushiusdt', 'aaveusdt',
-             'etcusdt', 'crousdt', 'axsusdt', 'zecusdt', 'xlmusdt', 'bsvusdt',
-             'dashusdt', '1inchusdt', 'xmrusdt', 'compusdt',
-             'iotausdt', 'sklusdt', 'paxusdt', 'wbtcusdt']
     coins_data = {}
     for coin in coins:
         data = pd.read_csv(
@@ -291,7 +294,8 @@ class Tier():
 
 # risk rate 是总体算的
 class Trade():
-    def __init__(self, coins_data, liquidation_lines=[1.1, 1.075, 1.05, 1.025, 1], client_asset=500e4, loan=1000e4, interest=40e4):
+    def __init__(self, coins_data, liquidation_lines=[1.1, 1.075, 1.05, 1.025, 1], client_asset=500e4, loan=1000e4,
+                 interest=40e4):
         """
 
         Args:
@@ -442,22 +446,22 @@ def get_total_value_and_short_loss(trade_df):
         total_shortloss += shortloss
     # 计算总的平仓损益，期末总资产，'期末risk rate
     total_dict = {'total short loss': total_shortloss, 'final value': trade_df['value'].iloc[-1],
-                      'final risk rate': trade_df['risk_rate'].iloc[-1]}
+                  'final risk rate': trade_df['risk_rate'].iloc[-1]}
     return total_dict
 
 
-def monitor(iterate=None):
+def monitor(iterate=None, duration=3):
     """ 强平模拟器，以六个月为周期进行强平模拟，并在每个周期随机生成持仓分布进行迭代
 
     Args:
         iterate: 循环迭代的次数，默认 None，即不循环
+        duration: 模拟周期长度 单位：月
     """
-    # start_dates = ['2021-5-12 00:00', '2021-6-12 00:00', '2021-7-12 00:00', '2021-8-12 00:00', '2021-9-12 00:00']
-    # end_dates = ['2021-11-12 00:00', '2021-12-12 00:00', '2022-1-12 00:00', '2022-2-12 00:00', '2022-3-12 00:00']
     months = ['2021-5-12 00:00', '2021-6-12 00:00', '2021-7-12 00:00', '2021-8-12 00:00', '2021-9-12 00:00',
-        '2021-10-12 00:00', '2021-11-12 00:00', '2021-12-12 00:00', '2022-1-12 00:00', '2022-2-12 00:00', '2022-3-12 00:00']
-    start_dates = months[:-3]
-    end_dates = months[3:]
+              '2021-10-12 00:00', '2021-11-12 00:00', '2021-12-12 00:00', '2022-1-12 00:00', '2022-2-12 00:00',
+              '2022-3-12 00:00']
+    start_dates = months[:-duration]
+    end_dates = months[duration:]
     coins_data = load_all_coin_data_to_dict()
     for n in range(len(start_dates)):
         start_dt = start_dates[n]
@@ -483,10 +487,10 @@ def monitor(iterate=None):
                 trade_info = t.trade(trade_dt)
                 # 统计 资产总价值
                 # trade_df = pd.DataFrame.from_dict(trade_info, orient='index')
-                #total_dict = get_total_value_and_short_loss(trade_df)  # calc_tiers_short_loss(trade_df)# 每个 tier，以及总值
+                # total_dict = get_total_value_and_short_loss(trade_df)  # calc_tiers_short_loss(trade_df)# 每个 tier，以及总值
                 final_trade = trade_info[trade_dt[-1]]
                 if final_trade['tier1_short'] == False and final_trade['tier2_short'] == False and \
-                    final_trade['tier3_short'] == False and final_trade['tier4_short'] == False:
+                        final_trade['tier3_short'] == False and final_trade['tier4_short'] == False:
                     short = False
                 else:
                     short = ''
@@ -504,12 +508,12 @@ def monitor(iterate=None):
                 start_dt.split(' ', 1)[0], end_dt.split(' ', 1)[0]))
             print(df)
             print('期末资产价值的均值为 {:,.0f}，标准差为 {:,.0f}'.format(df['final value'].mean(), df['final value'].std()))
-            print('期末 risk rate 的均值为{:.4f}，表明期末资金超出本息 {:.2%}'.format(df['final risk rate'].mean(), df['final risk rate'].mean() - 1))
-            print('强平概率为 {:.2%}（{}/{}）'.format(1 - len(df[df['short']==False])/iterate, len(df[df['short']==False]), iterate))
+            print('期末 risk rate 的均值为{:.4f}，表明期末资金超出本息 {:.2%}'.format(df['final risk rate'].mean(),
+                                                                     df['final risk rate'].mean() - 1))
+            print(
+                '强平概率为 {:.2%}（{}/{}）'.format(1 - len(df[df['short'] == False]) / iterate, len(df[df['short'] == False]),
+                                             iterate))
 
 
 if __name__ == "__main__":
-    # trade_df = pd.read_csv('C:/pythonProj/data/mandatory_liquidation/results/liquidation_2021-5-12_to_2021-11-12.csv',
-    #                        index_col=0)
-    # calc_tiers_short_loss(trade_df)
     monitor()
