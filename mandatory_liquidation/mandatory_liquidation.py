@@ -12,13 +12,11 @@ Class & Function
     Function:
         monitor 强平模拟器，调用上述的类进行滚动强平模拟
 """
-import time
-
 import numpy as np
 import pandas as pd
 
-from other_codes.get_historical_data.huobi_data import Huobi_kline
 from paint import paint_result
+from get_data import *
 
 
 coins = ['btcusdt', 'ethusdt', 'trxusdt', 'shibusdt', 'solusdt', 'dotusdt',
@@ -29,26 +27,7 @@ coins = ['btcusdt', 'ethusdt', 'trxusdt', 'shibusdt', 'solusdt', 'dotusdt',
         'iotausdt', 'sklusdt', 'paxusdt', 'wbtcusdt']
 
 
-def get_trade_data(target='btcusdt', start_time=None, end_time=None, period='5min'):
-    tradedata = Huobi_kline(symbol=target, period=period, start_time=start_time, end_time=end_time,
-                            get_full_market_data=True, col_with_asset_name=False)
-    print(tradedata)
-    tradedata.to_csv('C:/pythonProj/data/mandatory_liquidation/origin_data/{}_{}_{}_to_{}.csv'.format(target, period,
-                                                                                                      start_time,
-                                                                                                      end_time))
-    return tradedata
-
-
-def download_all_coin_data():
-    # 生成 timestamp
-    start_time = int(time.mktime((2021, 5, 12, 0, 0, 0, 0, 0, 0)))
-    end_time = int(time.mktime((2022, 3, 12, 0, 0, 0, 0, 0, 0)))
-    for i in range(len(coins) - 12, 10, -1):  # 10, len(coins)): # 若从前往后，是第十个
-        coin = coins[i]
-        print('\n......', coin)
-        get_trade_data(target=coin, start_time=start_time, end_time=end_time, period='5min')
-
-
+# 获取 四个tier list，若tier
 def get_four_tiers():
     """
     Returns: 四个 tier (字典形式，含字段 { coin, percent, slippage})
@@ -69,6 +48,7 @@ def get_four_tiers():
     return tier1, tier2, tier3, tier4
 
 
+# 正态分布 随机生成持仓占比（随机数和为1）
 def get_random_proportion(num):
     r = np.random.normal(loc=0, scale=1.0, size=num)
     # 保证正态分布随机数的最小值 > 0
@@ -77,24 +57,6 @@ def get_random_proportion(num):
     # 使和为 1
     proportion = r / sum(r)
     return proportion
-
-
-def load_all_coin_data_to_dict():
-    coins_data = {}
-    for coin in coins:
-        data = pd.read_csv(
-            'C:/pythonProj/data/mandatory_liquidation/origin_data/{}_5min_1620748800_to_1647014400.csv'.format(
-                coin), index_col=0)
-        data.index = pd.to_datetime(data.index)
-        coins_data[coin] = data.to_dict('index')
-    return coins_data
-
-
-def select_coin_data(coins_data, tier_coin):
-    select_coins = {}
-    for coin in tier_coin:
-        select_coins[coin] = coins_data[coin]
-    return select_coins
 
 
 class Coin():
@@ -462,7 +424,7 @@ def monitor(iterate=None, duration=3):
               '2022-3-12 00:00']
     start_dates = months[:-duration]
     end_dates = months[duration:]
-    coins_data = load_all_coin_data_to_dict()
+    coins_data = load_all_coin_data_to_dict(coins)
     for n in range(len(start_dates)):
         start_dt = start_dates[n]
         end_dt = end_dates[n]
