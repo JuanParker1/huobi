@@ -27,7 +27,7 @@ coins = ['btcusdt', 'ethusdt', 'trxusdt', 'shibusdt', 'solusdt', 'dotusdt',
         'iotausdt', 'sklusdt', 'paxusdt', 'wbtcusdt']
 
 
-# 获取 四个tier list，若tier
+# 获取 四个tier list 以及其对应的持仓占比、滑点，若tier名单发生变化，需要在此函数内进行调整
 def get_four_tiers():
     """
     Returns: 四个 tier (字典形式，含字段 { coin, percent, slippage})

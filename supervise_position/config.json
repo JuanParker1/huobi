@@ -1,0 +1,31 @@
+{
+    "user": {
+        "api": "hrf5gdfghe-c2d03c8c-f4c4e8c7-cd08d"
+        "secret": "24691826-9d56004b-4167f547-a1e5e"
+    },
+    "ding": {
+        "secret": "SEC8847c2eb4980651aceb5dca50daa713373c7276440395ee81be6f8d11c655902",
+        "url": "https://oapi.dingtalk.com/robot/send?access_token=2de56dc81131b65b3160fd6f2c958d51da2181a6c8857795db8936b01ea01284"
+    },
+    "permit_coins": ["usdt", "usdc", "husd", "fil", "ltc", "xrp", "bch", "bsv", "trx", "link",
+                    "pax", "etc", "bnb", "ada", "doge", "xlm", "xmr", "eos", "neo", "comp",
+                    "dash", "zec", "btg", "sol", "avax", "cake", "axs", "qnt", "shib", "perp",
+                    "nexo", "sand", "skl", "dydx", "cream", "btc", "eth", "dai", "moita",
+                    "1inch", "slp", "sushi", "dot", "uni", "wbtc", "aave", "cro"],
+    "tier1": {
+        "permit": 0.4,
+        "coins": []
+    },
+    "tier2": {
+        "permit": 0.3,
+        "coins": []
+    },
+    "tier3": {
+        "permit": 0.2,
+        "coins": []
+    },
+    "tier4": {
+        "permit": 0.1,
+        "coins": []
+    }
+}
