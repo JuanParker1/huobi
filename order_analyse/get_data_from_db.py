@@ -7,7 +7,7 @@ def connect_db(tablename):
                             password='hkresearch2019', host='10.157.21.20', port=5432)
 
     # sql语句
-    sql = "select * from {} where client_id in (18, 24) order by create_time desc ".format(tablename)
+    sql = "select * from {} where client_id = 24 order by create_time desc ".format(tablename)
     df = pd.read_sql(sql=sql, con=conn)
     return df
 

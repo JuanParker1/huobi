@@ -24,10 +24,9 @@ class MatchOrder():
         self.interval = interval
         self.tol = 0.01  # 1% 的容忍度
 
-    def cut_pms(self, starttime):
+    def cut_data(self, data, starttime):
         # 筛选出其 starttime 往后 interval 秒 这段时间范围内，pms 的所有数据
-        period_data = self.pms_data[(self.pms_data.index > starttime) & (self.pms_data.index < starttime + \
-                                                                         self.interval * 1000)]
+        period_data = data[(data.index > starttime) & (data.index < starttime + self.interval * 1000)]
         return period_data
 
     def match_info(self, target, candidate):
@@ -76,7 +75,7 @@ class MatchOrder():
             target = self.neworders[['side', 'quote_coin', 'base_coin', 'client_id', 'base_amount']].iloc[i, :]
             accept_time = self.neworders.index[i]
             # 对 neworder 中的每一条数据，筛选出其 accept_time 往后 interval 秒 时间内，pms的所有数据
-            candidate = self.cut_pms(accept_time)
+            candidate = self.cut_data(self.pms_data, accept_time)
             if len(candidate) == 0:
                 self.matched_data['match'].iloc[i] = 'NO'
                 continue

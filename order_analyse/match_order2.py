@@ -4,7 +4,7 @@ import datetime
 
 from api_and_ding.ding import DingReporter
 from match_order import MatchOrder
-from get_data_from_db import get_current_data_from_db
+from get_data_from_db import connect_db
 
 
 
@@ -45,18 +45,13 @@ def nSum(nums, n: int, target, tol=0.05):
 
 
 class DiffDirectionMatch(MatchOrder):
-    def __init__(self, neworders, pms_data, interval):
+    def __init__(self, neworders, interval):
         """
         Args:
-            neworders: dataframe 以 quote_accept_time 为index
             pms_data: dataframe 以 exec_place_time 为index
             interval: int       时间间隔 单位秒
         """
-        pms_data['quote_coin'] = pms_data['symbol'].apply(lambda x: x.split("_")[0].upper())
-        pms_data['base_coin'] = pms_data['symbol'].apply(lambda x: x.split("_")[1].upper())
-
         self.neworders = neworders
-        self.pms_data = pms_data
 
         self.interval = interval
         self.tol = 0.05  # 5% 的容忍度
@@ -65,13 +60,31 @@ class DiffDirectionMatch(MatchOrder):
         # 筛选出 side 正好相反，币种 、client_id 均匹配的数据
         candidate = candidate[(candidate['side'] != target['side']) &
                               (candidate['quote_coin'] == target['quote_coin']) &
-                              (candidate['base_coin'] == target['base_coin']) &
                               (candidate['client_id'] == target['client_id'])]
         return candidate
 
+    def match_amount_ratio_one2one(self, target, candidate):
+        # 筛选出 base_amount 的误差在 tol 以内的数据，若存在不止一条数据，则选误差最小的那一条
+        match_ind = []
+        tol_rate_list = []
+        for i in range(len(candidate)):
+            amount_ratio = candidate.base_amount.iloc[i] / target['base_amount']
+            if abs(1 - amount_ratio) <= self.tol:
+                match_ind.append(i)
+                tol_rate_list.append(abs(1 - amount_ratio))
+
+        # 输出结果
+        if len(tol_rate_list) == 0:
+            return []
+        elif len(match_ind) == 1:
+            return candidate.iloc[match_ind, :]
+        else:
+            l = np.argmin(tol_rate_list)
+            return candidate.iloc[[match_ind[l]], :]
+
     def match_amount_ratio_one2many(self, target, candidate, tol):
         # 筛选出 base_amount 的误差在 tol 以内的数据，若存在不止一条数据，则选误差最小的那一条
-        candidate_list = candidate.exec_base_amount.to_list()
+        candidate_list = candidate.base_amount.to_list()
         candidate_list.sort()
 
         results = []
@@ -80,13 +93,13 @@ class DiffDirectionMatch(MatchOrder):
             if res:
                 results += res   # 如果不为空，则加入 list
 
-        print('target', target['base_amount'])
-        print('results: ', results)
+        # print('target', target['base_amount'])
+        # print('results: ', results)
         # 输出结果
         if len(results) == 0:
             return []
         elif len(results) == 1:
-            many = candidate.index[candidate.exec_base_amount.isin(results[0])]
+            many = candidate.index[candidate.base_amount.isin(results[0])]
             order_idx = many.to_list()
             return order_idx
         else:
@@ -94,73 +107,86 @@ class DiffDirectionMatch(MatchOrder):
             sum_res = [sum(r) for r in results]
             bias = abs(np.divide(sum_res, 494527.9232) - 1)
             idx = np.argmin(bias)
-            many = candidate.index[candidate.exec_base_amount.isin(results[idx])]
+            many = candidate.index[candidate.base_amount.isin(results[idx])]
             order_idx = many.to_list()
-            print(many, order_idx)
-            a==a
+            # print(many, order_idx)
             return order_idx
 
     def turn_pms_info_into_text(self, order_data):
-        print(order_data)
         try:
             dt = datetime.datetime.fromtimestamp(order_data.name // 1000)
         except AttributeError:
             dt = datetime.datetime.fromtimestamp(order_data.index[0] // 1000)
             order_data = order_data.to_dict('index')[order_data.index[0]]
-            print(dt)
-            print(dt, order_data['quote_coin'], order_data['base_coin'], order_data['side'], order_data['exec_base_amount'])
-        text = '\n\t{}，{}/{} 的 {}交易, exec_base_amount:{:.6f} ' .format(
-                dt, order_data['quote_coin'], order_data['base_coin'], order_data['side'], order_data['exec_base_amount'])
+        text = '\n\t{}，{}/{} 的 {}交易, base_amount:{:.6f} ' .format(
+                dt, order_data['quote_coin'], order_data['base_coin'], order_data['side'], order_data['base_amount'])
         return text
 
-    def match_one2many(self):
-        self.matched_data = pd.DataFrame(index=self.neworders.index, columns=
-                        ['id', 'side', 'quote_coin', 'base_coin', 'client_id', 'base_amount', 'price',
-                        'exec_place_time', 'exec_price', 'exec_base_amount', 'exec_algo', 'match'])
-        self.matched_data[['id','side', 'quote_coin', 'base_coin', 'client_id', 'base_amount', 'price']] = \
-            self.neworders[['id','side','quote_coin', 'base_coin', 'client_id', 'base_amount', 'price']]
-        # 开始逐条匹配
-        for i in range(len(self.neworders)):
-            target = self.neworders[['side', 'quote_coin', 'base_coin', 'client_id', 'base_amount']].iloc[i, :]
-            accept_time = self.neworders.index[i]
-            # 对 neworder 中的每一条数据，筛选出其 accept_time 往后 interval 秒 时间内，pms的所有数据
-            candidate = self.cut_pms(accept_time)
-            if len(candidate) == 0:
-                self.matched_data['match'].iloc[i] = 'NO'
-                continue
-            # 匹配  side、币种 (quote_coin) 、client_id 等数据
-            candidate = self.match_info(target, candidate)
-            if len(candidate) == 0:
-                self.matched_data['match'].iloc[i] = 'NO'
-                continue
-            # 筛选出二者 base_amount 的误差在 5% 以内的数据，若存在不止一条数据，则选误差最小的那一条
-            one2one = self.match_amount_ratio(target, candidate)
-            if len(one2one) != 0:  # 可 一对一 匹配
-                self.matched_data['match'].iloc[i] = 'one2one'
-                self.update_matched_data(i, one2one)
+    def match(self, target, candidate):
+        if len(candidate) == 0:
+            return 'NO', None
+
+        candidate = self.match_info(target, candidate)  # 匹配  side、币种 、client_id 等数据
+        if len(candidate) == 0:
+            return 'NO', None
+        # 筛选 base_amount 的误差在 5% 以内的数据，若存在不止一条数据，则选误差最小的那一条
+        one2one = self.match_amount_ratio_one2one(target, candidate)
+        if len(one2one) != 0:  # 可 一对一 匹配
+            dt = datetime.datetime.fromtimestamp(target.name // 1000)
+            content = "{}，{}/{} 的 {}交易，交易量为{}，在误差 5% 情况下和以下 1 条对冲交易相匹配：".format(
+                dt, target['quote_coin'],target['base_coin'], target['side'], target['base_amount'])
+            content += self.turn_pms_info_into_text(one2one)
+            ding.send_text(content)
+            # print(content)
+            return 'one2one', one2one.index[0]
+        elif len(candidate) == 1:
+            return 'NO', None
+        else:  # 考虑多对一
+            res = self.match_amount_ratio_one2many(target, candidate, tol=self.tol)
+            if res:  # result 不为空
                 dt = datetime.datetime.fromtimestamp(target.name // 1000)
-                content = "{}，{}/{} 的 {}交易，交易量为{}，在误差 5% 情况下和以下 1 条对冲交易相匹配：".format(dt, target['quote_coin'],
-                                            target['base_coin'], target['side'], target['base_amount'])
-                content += self.turn_pms_info_into_text(one2one)
-                # ding.send_text(content)
-                print(content)
-                a==a
-            elif len(candidate) == 1:
-                self.matched_data['match'].iloc[i] = 'NO'
-            else:  # 考虑多对一
-                res = self.match_amount_ratio_one2many(target, candidate, tol=self.tol)
-                print('\none2many result', res)
-                if res:   # result 不为空
-                    self.matched_data['match'].iloc[i] = 'one2many'
-                    dt = datetime.datetime.fromtimestamp(target.name // 1000)
-                    content = "{}，{}/{} 的 {}交易，交易量为{}，在误差 5% 情况下和以下 {} 条对冲交易相匹配：".format(dt, target['quote_coin'],
-                                target['base_coin'], target['side'], target['base_amount'], len(res))
-                    for j in res:
-                        content += self.turn_pms_info_into_text(candidate.loc[j])
-                    # ding.send_text(content)
-                    print(content)
-                else:
-                    self.matched_data['match'].iloc[i] = 'NO'
+                content = "{}，{}/{} 的 {}交易，交易量为{}，在误差 5% 情况下和以下 {} 条对冲交易相匹配：".format(
+                    dt, target['quote_coin'], target['base_coin'], target['side'], target['base_amount'],len(res))
+                for j in res:
+                    content += self.turn_pms_info_into_text(candidate.loc[j])
+                ding.send_text(content)
+                # print(content)
+                return 'one2many', res
+            else:
+                return 'NO', None
+
+    def update_many2one(self):
+        one2many_idx = self.matched_data[self.matched_data['match'] == 'one2many'].index
+        if len(one2many_idx) > 0:
+            for i in one2many_idx:
+                match_idx = self.matched_data['matched_timestamp'].loc[i]
+                for idx in match_idx:
+                    self.matched_data['match'].iloc[idx] = 'many2one'
+                    self.matched_data['matched_timestamp'].iloc[idx] = i
+        return self.matched_data
+
+    def run(self):
+        self.matched_data = self.neworders[
+            ['id', 'side', 'quote_coin', 'base_coin', 'client_id', 'base_amount', 'price']]
+        self.matched_data[['match', 'matched_timestamp']] = np.nan
+
+        # 开始逐条匹配
+        idx_list = list(self.neworders.index)
+        for ts in idx_list:
+            if self.matched_data['match'].loc[ts] == 'one2one':
+                print('已经匹配好了')
+                continue
+            target = self.neworders.loc[ts]
+            # 对 neworder 中的每一条数据，筛选出其 ts 往后 interval 秒 时间内，pms的所有数据
+            candidate = self.cut_data(self.neworders, ts)
+
+            is_match, match_idx = self.match(target, candidate)
+            self.matched_data['match'].loc[ts] = is_match
+            self.matched_data['match'].loc[match_idx] = is_match
+            self.matched_data['matched_timestamp'].loc[ts] = match_idx
+            self.matched_data['matched_timestamp'].loc[match_idx] = ts
+
+        self.update_many2one()
         return self.matched_data
 
 
@@ -172,19 +198,17 @@ if __name__ == '__main__':
 
     ding = DingReporter(ding)
 
-    neworders, pms_data = get_current_data_from_db()
+    neworders = connect_db(tablename='neworders')
+    # 设 index，更改数据类型
+    neworders = neworders.set_index('quote_accept_time')
+    neworders[['price', 'quote_amount', 'base_amount']] = neworders[['price', 'quote_amount', 'base_amount']].astype(float)
     period = 5 * 60  # 5 min
-
     # neworders.to_csv('neworders.csv')
-    # pms_data.to_csv('pms_data.csv')
 
-    m = DiffDirectionMatch(neworders, pms_data, interval=period)
-    matched_data = m.match_one2many()
+    m = DiffDirectionMatch(neworders, interval=period)
+    matched_data = m.run()
     print(matched_data[matched_data['match']!='NO'])
-
-    # all_matched = neworders.copy()
-    # all_matched[['exec_place_time', 'match']] = one2one[['exec_place_time', 'match']]
-    # all_matched = pd.merge(all_matched, pms_data, left_on='exec_place_time', right_index=True, how='left')
+    # matched_data[matched_data['match'] != 'NO'].to_csv('matched.csv')
 
     contant = f"共 {len(neworders)} 条数据，匹配上 {len(matched_data[matched_data['match']!='NO'])} 条"
     print(contant)
