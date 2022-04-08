@@ -7,7 +7,7 @@ from match_order import MatchOrder
 from get_data_from_db import connect_db
 
 
-
+# 寻找 n数之和 = target, 允许误差在 5% 左右
 def nSum(nums, n: int, target, tol=0.05):
     res = []
     if len(nums) < n:
@@ -48,7 +48,7 @@ class DiffDirectionMatch(MatchOrder):
     def __init__(self, neworders, interval):
         """
         Args:
-            pms_data: dataframe 以 exec_place_time 为index
+            neworders: dataframe 以 quote_accept_time 为index
             interval: int       时间间隔 单位秒
         """
         self.neworders = neworders
@@ -212,13 +212,3 @@ if __name__ == '__main__':
 
     contant = f"共 {len(neworders)} 条数据，匹配上 {len(matched_data[matched_data['match']!='NO'])} 条"
     print(contant)
-
-
-
-
-
-
-    # if len(results) != 0:
-    #     content = '账户内持仓了不允许持仓的币种: {}'.format(forbid_coin)
-    #     ding.send_text(content)
-    #     print(content)
