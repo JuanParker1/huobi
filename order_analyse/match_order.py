@@ -7,7 +7,7 @@ def get_data(path=r'data/sql_match_order/neworders.csv'):
     pms_data = pd.read_csv(path)
 
 
-class MathchOrder():
+class MatchOrder():
     def __init__(self, neworders, pms_data, interval=30):
         """
         Args:
@@ -59,6 +59,11 @@ class MathchOrder():
             l = np.argmin(tol_rate_list)
             return candidate.iloc[[match_ind[l]], :]
 
+    def update_matched_data(self, idx, candidate):
+        self.matched_data['exec_place_time'].iloc[idx] = candidate.index.values[0]  # candidate['exec_place_time']
+        self.matched_data['exec_price'].iloc[idx] = candidate['exec_price'].values[0]
+        self.matched_data['exec_base_amount'].iloc[idx] = candidate['exec_base_amount'].values[0]
+        self.matched_data['exec_algo'].iloc[idx] = candidate['exec_algo'].values[0]
 
     def match(self):
         self.matched_data = pd.DataFrame(index=self.neworders.index, columns=
@@ -85,18 +90,14 @@ class MathchOrder():
             if len(candidate) == 0:
                 self.matched_data['match'].iloc[i] = 'NO'
                 continue
-            else:
-                # 看 base_coin 是否对得上
-                if candidate['base_coin'].values[0] == target['base_coin']:
-                    self.matched_data['match'].iloc[i] = 'YES'
-                else:
-                    self.matched_data['match'].iloc[i] = 'ALMOST'
-                self.matched_data['exec_place_time'].iloc[i] = candidate.index.values[0]  # candidate['exec_place_time']
-                self.matched_data['exec_price'].iloc[i] = candidate['exec_price'].values[0]
-                self.matched_data['exec_base_amount'].iloc[i] = candidate['exec_base_amount'].values[0]
-                self.matched_data['exec_algo'].iloc[i] = candidate['exec_algo'].values[0]
 
-                # print(self.matched_data.iloc[i])
+            # 看 base_coin 是否对得上
+            if candidate['base_coin'].values[0] == target['base_coin']:
+                self.matched_data['match'].iloc[i] = 'YES'
+            else:
+                self.matched_data['match'].iloc[i] = 'ALMOST'
+            self.update_matched_data(i, candidate)
+            # print(self.matched_data.iloc[i])
         return self.matched_data
 
 
@@ -111,7 +112,7 @@ if __name__ == "__main__":
     pms_data = pms_data.set_index('exec_place_time').sort_index()
 
     interval = 600
-    m = MathchOrder(neworders, pms_data, interval)
+    m = MatchOrder(neworders, pms_data, interval)
     matched_data = m.match()
 
     print(matched_data)

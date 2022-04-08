@@ -25,6 +25,11 @@ import ccxt
 # symbol = 'BTC/USDT'
 # order_book = binance.fetch_order_book(symbol, limit=5)
 # print(order_book)
+import numpy as np
 
+results = [[50721.35505071, 439477.22987796], [1619145583406, 14556056]]
 
-
+sum_res = [sum(r) for r in results]
+bias = abs(np.divide(sum_res, 494527.9232) - 1)
+idx = np.argmin(bias)
+print(results[idx])

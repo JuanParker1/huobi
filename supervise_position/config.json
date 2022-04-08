@@ -1,6 +1,6 @@
 {
     "user": {
-        "api": "hrf5gdfghe-c2d03c8c-f4c4e8c7-cd08d"
+        "api": "hrf5gdfghe-c2d03c8c-f4c4e8c7-cd08d",
         "secret": "24691826-9d56004b-4167f547-a1e5e"
     },
     "ding": {
@@ -14,18 +14,21 @@
                     "1inch", "slp", "sushi", "dot", "uni", "wbtc", "aave", "cro"],
     "tier1": {
         "permit": 0.4,
-        "coins": []
+        "coins": ["btcusdt", "ethusdt"]
     },
     "tier2": {
         "permit": 0.3,
-        "coins": []
+        "coins": ["trxusdt", "shibusdt", "solusdt", "dotusdt","filusdt", "dogeusdt",
+                "adausdt", "linkusdt", "sandusdt", "ltcusdt", "avaxusdt"]
     },
     "tier3": {
         "permit": 0.2,
-        "coins": []
+        "coins": ["eosusdt", "bchusdt", "uniusdt", "sushiusdt", "aaveusdt",
+                "etcusdt", "crousdt", "axsusdt", "zecusdt", "xlmusdt"]
     },
     "tier4": {
         "permit": 0.1,
-        "coins": []
+        "coins": ["bsvusdt", "dashusdt", "1inchusdt", "xmrusdt", "compusdt",
+                "iotausdt", "sklusdt", "paxusdt", "wbtcusdt"]
     }
 }

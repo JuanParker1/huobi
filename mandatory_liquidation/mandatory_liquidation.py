@@ -19,12 +19,13 @@ from paint import paint_result
 from get_data import *
 
 
-coins = ['btcusdt', 'ethusdt', 'trxusdt', 'shibusdt', 'solusdt', 'dotusdt',
-        'filusdt', 'dogeusdt', 'adausdt', 'linkusdt', 'sandusdt', 'ltcusdt',
-        'avaxusdt', 'eosusdt', 'bchusdt', 'uniusdt', 'sushiusdt', 'aaveusdt',
-        'etcusdt', 'crousdt', 'axsusdt', 'zecusdt', 'xlmusdt', 'bsvusdt',
-        'dashusdt', '1inchusdt', 'xmrusdt', 'compusdt',
-        'iotausdt', 'sklusdt', 'paxusdt', 'wbtcusdt']
+coins = ['btcusdt', 'ethusdt',  # tier 1
+         'trxusdt', 'shibusdt', 'solusdt', 'dotusdt','filusdt', 'dogeusdt',
+         'adausdt', 'linkusdt', 'sandusdt', 'ltcusdt', 'avaxusdt', # tier 2
+         'eosusdt', 'bchusdt', 'uniusdt', 'sushiusdt', 'aaveusdt',
+         'etcusdt', 'crousdt', 'axsusdt', 'zecusdt', 'xlmusdt',  # tier 3
+         'bsvusdt', 'dashusdt', '1inchusdt', 'xmrusdt', 'compusdt',
+         'iotausdt', 'sklusdt', 'paxusdt', 'wbtcusdt']
 
 
 # 获取 四个tier list 以及其对应的持仓占比、滑点，若tier名单发生变化，需要在此函数内进行调整

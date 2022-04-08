@@ -6,24 +6,7 @@ import psycopg2
 from analyse import compare_price
 from api_and_ding.ding import DingReporter
 from match_order import *
-
-
-def connect_db(tablename='neworders'):
-    conn = psycopg2.connect(database='otcglobal', user='research',
-                            password='hkresearch2019', host='10.157.21.20', port=5432)
-
-    # sql语句
-    sql = "select * from {} where client_id = 24 order by create_time desc ".format(tablename)
-    df = pd.read_sql(sql=sql, con=conn)
-
-    # 获得游标对象
-    # cursor = conn.cursor()
-    # cursor.execute(sql)
-    # data = cursor.fetchmany(2)  # fetchmany(2)  # fetchone()  # fetchall()
-    # print("database version : ", data)
-    # conn.commit()  # 事物提交
-    # conn.close()  # 关闭数据库连接
-    return df
+from get_data_from_db import get_current_data_from_db
 
 
 class ReportNewOrder():
@@ -33,20 +16,6 @@ class ReportNewOrder():
         self.last_order_id = config['last_neworder_id']
         self.last_ts = config['last_timestamp']  # 上次运行时的 timestamp
         self.new_ts = None  # 本次运行/ 最新一条 order 的 quote_accept_time
-
-    @staticmethod
-    def get_current_data_from_db():
-        neworders = connect_db(tablename='neworders')
-        pms_data = connect_db(tablename='pms_executions_spot')
-        # 设 index，更改数据类型
-        neworders = neworders.set_index('quote_accept_time')
-        neworders[['price', 'quote_amount', 'base_amount']] = neworders[
-            ['price', 'quote_amount', 'base_amount']].astype(
-            float)
-        pms_data = pms_data.set_index('exec_place_time')
-        pms_data[['exec_price', 'exec_quote_amount', 'exec_base_amount']] = pms_data[['exec_price', 'exec_quote_amount',
-                                                                                      'exec_base_amount']].astype(float)
-        return neworders, pms_data
 
     def get_ratio_threshold(self, matched_data):
         threshold_down = matched_data.groupby('quote_coin')['d_amount_ratio'].apply(  # base_coin
@@ -109,7 +78,7 @@ class ReportNewOrder():
         ding.send_text(content)
 
     def get_matched_data(self, neworders, pms_data):
-        m = MathchOrder(neworders, pms_data, self.interval)
+        m = MatchOrder(neworders, pms_data, self.interval)
         matched_data = m.match()
         matched_data = compare_price(matched_data)
         matched_data = matched_data.dropna()
@@ -135,7 +104,7 @@ class ReportNewOrder():
         return config
 
     def run(self):
-        neworders, pms_data = self.get_current_data_from_db()
+        neworders, pms_data = get_current_data_from_db()
 
         self.new_ts = neworders.index[0]
         self.new_order_id = neworders['id'].iloc[0]
