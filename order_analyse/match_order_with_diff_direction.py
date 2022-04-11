@@ -1,10 +1,11 @@
 import pandas as pd
 import numpy as np
 import datetime
+import json
 
 from api_and_ding.ding import DingReporter
 from match_order import MatchOrder
-from get_data_from_db import connect_db
+from get_data_from_db import get_current_data_from_db
 
 
 # 寻找 n数之和 = target, 允许误差在 5% 左右
@@ -118,11 +119,11 @@ class DiffDirectionMatch(MatchOrder):
         except AttributeError:
             dt = datetime.datetime.fromtimestamp(order_data.index[0] // 1000)
             order_data = order_data.to_dict('index')[order_data.index[0]]
-        text = '\n\t{}，{}/{} 的 {}交易, base_amount:{:.6f} ' .format(
-                dt, order_data['quote_coin'], order_data['base_coin'], order_data['side'], order_data['base_amount'])
+        text = '\n{}，{}/{} 的 {}交易,id为{}, 交易量: {:.6f} ' .format(
+            dt, order_data['quote_coin'], order_data['base_coin'], order_data['side'],order_data['id'], order_data['base_amount'])
         return text
 
-    def match(self, target, candidate):
+    def match(self, target, candidate, ding):
         if len(candidate) == 0:
             return 'NO', None
 
@@ -133,8 +134,8 @@ class DiffDirectionMatch(MatchOrder):
         one2one = self.match_amount_ratio_one2one(target, candidate)
         if len(one2one) != 0:  # 可 一对一 匹配
             dt = datetime.datetime.fromtimestamp(target.name // 1000)
-            content = "{}，{}/{} 的 {}交易，交易量为{}，在误差 5% 情况下和以下 1 条对冲交易相匹配：".format(
-                dt, target['quote_coin'],target['base_coin'], target['side'], target['base_amount'])
+            content = "【锁价订单同向匹配】{}，{}/{} 的 {}交易,id为{}，交易量为{}，在误差 5% 情况下和以下 1 条交易相匹配：".format(
+                dt, target['quote_coin'],target['base_coin'], target['side'], target['id'], target['base_amount'])
             content += self.turn_pms_info_into_text(one2one)
             ding.send_text(content)
             # print(content)
@@ -145,8 +146,8 @@ class DiffDirectionMatch(MatchOrder):
             res = self.match_amount_ratio_one2many(target, candidate, tol=self.tol)
             if res:  # result 不为空
                 dt = datetime.datetime.fromtimestamp(target.name // 1000)
-                content = "{}，{}/{} 的 {}交易，交易量为{}，在误差 5% 情况下和以下 {} 条对冲交易相匹配：".format(
-                    dt, target['quote_coin'], target['base_coin'], target['side'], target['base_amount'],len(res))
+                content = "【锁价订单同向匹配】{}，{}/{} 的 {}交易,id为{}，交易量为{}，在误差 5% 情况下和以下 {} 条交易相匹配：".format(
+                    dt, target['quote_coin'], target['base_coin'], target['side'], target['id'], target['base_amount'],len(res))
                 for j in res:
                     content += self.turn_pms_info_into_text(candidate.loc[j])
                 ding.send_text(content)
@@ -165,13 +166,14 @@ class DiffDirectionMatch(MatchOrder):
                     self.matched_data['matched_timestamp'].iloc[idx] = i
         return self.matched_data
 
-    def run(self):
+    def run(self, ding):
         self.matched_data = self.neworders[
             ['id', 'side', 'quote_coin', 'base_coin', 'client_id', 'base_amount', 'price']]
         self.matched_data[['match', 'matched_timestamp']] = np.nan
 
         # 开始逐条匹配
         idx_list = list(self.neworders.index)
+        need_push = False
         for ts in idx_list:
             if self.matched_data['match'].loc[ts] == 'one2one':
                 print('已经匹配好了')
@@ -180,28 +182,24 @@ class DiffDirectionMatch(MatchOrder):
             # 对 neworder 中的每一条数据，筛选出其 ts 往后 interval 秒 时间内，pms的所有数据
             candidate = self.cut_data(self.neworders, ts)
 
-            is_match, match_idx = self.match(target, candidate)
+            is_match, match_idx = self.match(target, candidate, ding)
             self.matched_data['match'].loc[ts] = is_match
             self.matched_data['match'].loc[match_idx] = is_match
             self.matched_data['matched_timestamp'].loc[ts] = match_idx
             self.matched_data['matched_timestamp'].loc[match_idx] = ts
+            if is_match !='NO':
+                need_push = True
 
         self.update_many2one()
-        return self.matched_data
+        return self.matched_data, need_push
 
 
 if __name__ == '__main__':
-    ding = {
-        "secret": "SEC8847c2eb4980651aceb5dca50daa713373c7276440395ee81be6f8d11c655902",
-        "url": "https://oapi.dingtalk.com/robot/send?access_token=2de56dc81131b65b3160fd6f2c958d51da2181a6c8857795db8936b01ea01284"
-    }
+    with open('config.json', 'r', encoding='utf8') as fp:
+        config = json.load(fp)
+    ding = DingReporter(config['ding'])
 
-    ding = DingReporter(ding)
-
-    neworders = connect_db(tablename='neworders')
-    # 设 index，更改数据类型
-    neworders = neworders.set_index('quote_accept_time')
-    neworders[['price', 'quote_amount', 'base_amount']] = neworders[['price', 'quote_amount', 'base_amount']].astype(float)
+    neworders = get_current_data_from_db(table1='neworders')
     period = 5 * 60  # 5 min
     # neworders.to_csv('neworders.csv')
 
@@ -210,5 +208,5 @@ if __name__ == '__main__':
     print(matched_data[matched_data['match']!='NO'])
     # matched_data[matched_data['match'] != 'NO'].to_csv('matched.csv')
 
-    contant = f"共 {len(neworders)} 条数据，匹配上 {len(matched_data[matched_data['match']!='NO'])} 条"
-    print(contant)
+    content = f"共 {len(neworders)} 条数据，匹配上 {len(matched_data[matched_data['match']!='NO'])} 条"
+    print(content)

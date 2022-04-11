@@ -1,10 +1,11 @@
 {
-    "interval": 600,
+    "interval": 300,
     "percentile": 95,
     "ding": {
         "secret": "SEC8847c2eb4980651aceb5dca50daa713373c7276440395ee81be6f8d11c655902",
         "url": "https://oapi.dingtalk.com/robot/send?access_token=2de56dc81131b65b3160fd6f2c958d51da2181a6c8857795db8936b01ea01284"
     },
-    "last_neworder_id": 63,
-    "last_timestamp": 1647331632008
+    "last_neworder_id": 2515,
+    "last_timestamp": 1648544298685,
+    "sleep": 300
 }

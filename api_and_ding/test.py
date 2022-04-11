@@ -26,10 +26,24 @@ import ccxt
 # order_book = binance.fetch_order_book(symbol, limit=5)
 # print(order_book)
 import numpy as np
+import time
+import datetime
+from api_and_ding.ding import DingReporter
 
-results = [[50721.35505071, 439477.22987796], [1619145583406, 14556056]]
+import json
 
-sum_res = [sum(r) for r in results]
-bias = abs(np.divide(sum_res, 494527.9232) - 1)
-idx = np.argmin(bias)
-print(results[idx])
+
+with open(r'C:\pythonProj\order_analyse\config.json', 'r', encoding='utf8') as fp:
+    config = json.load(fp)
+ding = DingReporter(config['ding'])
+
+while True:
+    # 近期数据
+    start_ts = config['last_timestamp']
+    ding.send_text('{} - {} 时间段内无新订单'.format(str(datetime.datetime.fromtimestamp(start_ts//1000)),
+                                            str(datetime.datetime.fromtimestamp(time.time()))))
+    break
+
+
+# "last_neworder_id": 5,
+# "last_timestamp": 1646883273378
