@@ -40,8 +40,12 @@ ding = DingReporter(config['ding'])
 while True:
     # 近期数据
     start_ts = config['last_timestamp']
-    ding.send_text('{} - {} 时间段内无新订单'.format(str(datetime.datetime.fromtimestamp(start_ts//1000)),
-                                            str(datetime.datetime.fromtimestamp(time.time()))))
+    ts = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
+    text = '{} - {:%Y-%m-%d %H:%M:%S} 时间段内无新订单'.format(datetime.datetime.fromtimestamp(start_ts//1000),
+                                            datetime.datetime.fromtimestamp(time.time()))  # ts)  #
+    print(text)
+    ding.send_text('【锁价订单买卖匹配】2022-04-11 16:50:54，BTC/USDT 的 sell交易,id为5124，交易量为421.83950127，在误差 5% 情况下和以下 1 条交易相匹配：'
+                    '\n2022-04-11 16:53:37，BTC/USDT 的 buy交易,id为5126, 交易量: 422.034291 ')
     break
 
 

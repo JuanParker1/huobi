@@ -17,17 +17,21 @@ while True:
     start_ts = config['last_timestamp']
     neworders = get_recent_data(table='neworders', start_ts=start_ts)
     pms_data = get_recent_data(table='pms_executions_spot', start_ts=start_ts)
-    if len(neworders) == 0:
-        ding.send_text('{} - {} 时间段内无新订单'.format(datetime.datetime.fromtimestamp(start_ts//1000),
-                                                 datetime.datetime.fromtimestamp(time.time())))
-        config['sleep'] = 30 * 60  # 改为半小时运行一次
-        time.sleep(config['sleep'])
-        continue
     # 全部数据
     all_neworders = get_current_data_from_db(table='neworders')
     all_pms_data = get_current_data_from_db(table='pms_executions_spot')
     # 记录获取完数据的时间点
     new_ts = time.time() * 1000
+
+    if len(neworders) == 0:
+        ding.send_text('{} - {:%Y-%m-%d %H:%M:%S} 时间段内无新订单'.format(datetime.datetime.fromtimestamp(start_ts//1000),
+                                                 datetime.datetime.fromtimestamp(time.time())))
+        config['sleep'] = 30 * 60  # 改为半小时运行一次
+        # 更新 config 中的 'last_timestamp'
+        config['last_timestamp'] = new_ts
+        time.sleep(config['sleep'])
+        continue
+
 
     r = PushAnomalies(config, new_ts)
     push_anomalies = r.run(all_neworders, all_pms_data, ding) # 返回是否有异常情况
@@ -41,7 +45,7 @@ while True:
     config['last_timestamp'] = new_ts
     config = r.update_config(config)
     if not push_anomalies and not need_push:
-        ding.send_text('{} - {} 时间段内无新订单'.format(datetime.datetime.fromtimestamp(start_ts//1000),
+        ding.send_text('{} - {:%Y-%m-%d %H:%M:%S} 时间段内无新订单'.format(datetime.datetime.fromtimestamp(start_ts//1000),
                                                  datetime.datetime.fromtimestamp(config['last_timestamp'])))
         config['sleep'] = 30 * 60  # 改为半小时运行一次
     else:

@@ -134,7 +134,7 @@ class DiffDirectionMatch(MatchOrder):
         one2one = self.match_amount_ratio_one2one(target, candidate)
         if len(one2one) != 0:  # 可 一对一 匹配
             dt = datetime.datetime.fromtimestamp(target.name // 1000)
-            content = "【锁价订单同向匹配】{}，{}/{} 的 {}交易,id为{}，交易量为{}，在误差 5% 情况下和以下 1 条交易相匹配：".format(
+            content = "【锁价订单买卖匹配】{}，{}/{} 的 {}交易,id为{}，交易量为{}，在误差 5% 情况下和以下 1 条交易相匹配：".format(
                 dt, target['quote_coin'],target['base_coin'], target['side'], target['id'], target['base_amount'])
             content += self.turn_pms_info_into_text(one2one)
             ding.send_text(content)
@@ -146,7 +146,7 @@ class DiffDirectionMatch(MatchOrder):
             res = self.match_amount_ratio_one2many(target, candidate, tol=self.tol)
             if res:  # result 不为空
                 dt = datetime.datetime.fromtimestamp(target.name // 1000)
-                content = "【锁价订单同向匹配】{}，{}/{} 的 {}交易,id为{}，交易量为{}，在误差 5% 情况下和以下 {} 条交易相匹配：".format(
+                content = "【锁价订单买卖匹配】{}，{}/{} 的 {}交易,id为{}，交易量为{}，在误差 5% 情况下和以下 {} 条交易相匹配：".format(
                     dt, target['quote_coin'], target['base_coin'], target['side'], target['id'], target['base_amount'],len(res))
                 for j in res:
                     content += self.turn_pms_info_into_text(candidate.loc[j])
