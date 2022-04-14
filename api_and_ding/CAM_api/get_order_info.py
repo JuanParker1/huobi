@@ -115,13 +115,13 @@ if __name__ == "__main__":
     # rs_post = test_post(api_key, api_secret)
     # print(rs_post)
 
-    secret = 'SEC8847c2eb4980651aceb5dca50daa713373c7276440395ee81be6f8d11c655902'
-    url = 'https://oapi.dingtalk.com/robot/send?access_token=2de56dc81131b65b3160fd6f2c958d51da2181a6c8857795db8936b01ea01284'
-
-    config = {'url': url, 'secret': secret}  # config = {'uri': url, 'secret_key': secret}
-    d = DingReporter(config)
-    print('CAM API testing:\n'+str(json.dumps(rs_get, indent=2)))
-    d.send_text('CAM API testing:\n' + str(json.dumps(rs_get, indent=2)))
+    # secret = 'SEC8847c2eb4980651aceb5dca50daa713373c7276440395ee81be6f8d11c655902'
+    # url = 'https://oapi.dingtalk.com/robot/send?access_token=2de56dc81131b65b3160fd6f2c958d51da2181a6c8857795db8936b01ea01284'
+    #
+    # config = {'url': url, 'secret': secret}  # config = {'uri': url, 'secret_key': secret}
+    # d = DingReporter(config)
+    # print('CAM API testing:\n'+str(json.dumps(rs_get, indent=2)))
+    # d.send_text('CAM API testing:\n' + str(json.dumps(rs_get, indent=2)))
     # d.send(rs_get)
 
 

@@ -331,22 +331,22 @@ class Trade():
 
             # 若 触碰到/曾经触碰到强平线 + 对应tier仍有持仓，则将对应 tier 平仓
             # print(dt)
-            if (self.liquidation_lines[0] >= self.risk_rate > self.liquidation_lines[1] or self.Tier1.short) and \
+            if (self.liquidation_lines[0] >= self.risk_rate or self.Tier1.short) and \
                     not self.Tier1.is_empty:
                 self.Tier1.short_tier(dt)
                 self.Tier1.short = True
                 # print(dt, 'risk rate: {}, short tier 1 , daily loss: {}'.format(self.risk_rate, self.Tier2.short_loss))
-            if (self.liquidation_lines[1] >= self.risk_rate > self.liquidation_lines[2] or self.Tier2.short) and \
+            if (self.liquidation_lines[1] >= self.risk_rate or self.Tier2.short) and \
                     not self.Tier2.is_empty:
                 self.Tier2.short_tier(dt)
                 self.Tier2.short = True
                 # print(dt, 'risk rate: {}, short tier 2 , daily loss: {}'.format(self.risk_rate, self.Tier2.short_loss))
-            if (self.liquidation_lines[2] >= self.risk_rate > self.liquidation_lines[3] or self.Tier3.short) and \
+            if (self.liquidation_lines[2] >= self.risk_rate or self.Tier3.short) and \
                     not self.Tier3.is_empty:
                 self.Tier3.short_tier(dt)
                 self.Tier3.short = True
                 # print(dt, 'risk rate: {}, short tier 3 , daily loss: {}'.format(self.risk_rate, self.Tier2.short_loss))
-            if (self.liquidation_lines[3] >= self.risk_rate > self.liquidation_lines[4] or self.Tier4.short) and \
+            if (self.liquidation_lines[3] >= self.risk_rate or self.Tier4.short) and \
                     not self.Tier4.is_empty:
                 self.Tier4.short_tier(dt)
                 self.Tier4.short = True
@@ -413,7 +413,7 @@ def get_total_value_and_short_loss(trade_df):
     return total_dict
 
 
-def monitor(iterate=None, duration=3):
+def monitor(iterate=None, duration=3, liquidation_lines=[1.1, 1.1, 1.1, 1.1, 1.1]):
     """ 强平模拟器，以六个月为周期进行强平模拟，并在每个周期随机生成持仓分布进行迭代
 
     Args:
@@ -432,7 +432,7 @@ def monitor(iterate=None, duration=3):
         print(start_dt, end_dt)
         # 如果不迭代：存入此次的数据，并可视化
         if not iterate:
-            t = Trade(coins_data)
+            t = Trade(coins_data, liquidation_lines)
             trade_dt = pd.date_range(start_dt, end_dt, freq='5MIN')
             trade_info = t.trade(trade_dt)
             # 存入数据 + 可视化
@@ -445,7 +445,7 @@ def monitor(iterate=None, duration=3):
         else:
             tiers_info = {}
             for i in range(iterate):  # 循环30次，随机性
-                t = Trade(coins_data)
+                t = Trade(coins_data, liquidation_lines)
                 trade_dt = pd.date_range(start_dt, end_dt, freq='5MIN')
                 trade_info = t.trade(trade_dt)
                 # 统计 资产总价值
@@ -456,13 +456,13 @@ def monitor(iterate=None, duration=3):
                         final_trade['tier3_short'] == False and final_trade['tier4_short'] == False:
                     short = False
                 else:
-                    short = ''
-                    for j in range(1, 5):
-                        if final_trade[f'tier{str(j)}_short'] == True:
-                            short += f'tier{str(j)} '
+                    short = True  # ''
+                    # for j in range(1, 5):
+                    #     if final_trade[f'tier{str(j)}_short'] == True:
+                    #         short += f'tier{str(j)} '
                 total_dict = {'final value': final_trade['value'],
                               'final risk rate': final_trade['risk_rate'],
-                              'short': short}
+                              'short': short}  #
                 print(i, end=' ')
                 tiers_info[i] = total_dict
 
@@ -473,10 +473,9 @@ def monitor(iterate=None, duration=3):
             print('期末资产价值的均值为 {:,.0f}，标准差为 {:,.0f}'.format(df['final value'].mean(), df['final value'].std()))
             print('期末 risk rate 的均值为{:.4f}，表明期末资金超出本息 {:.2%}'.format(df['final risk rate'].mean(),
                                                                      df['final risk rate'].mean() - 1))
-            print(
-                '强平概率为 {:.2%}（{}/{}）'.format(1 - len(df[df['short'] == False]) / iterate, len(df[df['short'] == False]),
-                                             iterate))
+            print('强平概率为 {:.2%}（{}/{}）'.format(1 - len(df[df['short'] == False]) / iterate, len(df[df['short'] ==
+                                                                                                   False]), iterate))
 
 
 if __name__ == "__main__":
-    monitor()
+    monitor(iterate=30, duration=3, liquidation_lines=[1.1, 1.1, 1.1, 1.1, 1.1])
