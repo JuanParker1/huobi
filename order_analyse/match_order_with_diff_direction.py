@@ -199,12 +199,13 @@ if __name__ == '__main__':
         config = json.load(fp)
     ding = DingReporter(config['ding'])
 
-    neworders = get_current_data_from_db(table1='neworders')
+    neworders = get_current_data_from_db(table='neworders')
     period = 5 * 60  # 5 min
     # neworders.to_csv('neworders.csv')
 
-    m = DiffDirectionMatch(neworders, interval=period)
-    matched_data = m.run()
+    m = DiffDirectionMatch(neworders, interval=config['interval'])
+    matched_data, need_push = m.run(ding)  # 返回匹配上的数据 & 是否有匹配上的数据（即是否推送）
+
     print(matched_data[matched_data['match']!='NO'])
     # matched_data[matched_data['match'] != 'NO'].to_csv('matched.csv')
 

@@ -128,6 +128,8 @@ class PushAnomalies():
         if self.new_order_id != self.last_order_id:
             matched_data = self.get_matched_data(neworders, pms_data)
             time_up, threshold_down, threshold_up = self.get_threshold(matched_data)
+            print('---===---')
+            print(threshold_down, threshold_up)
 
             self.len_new_order = len(neworders[neworders.index > self.last_ts])
             new_matched_data = matched_data[matched_data.index > self.last_ts]  # index 为 quote_accept_time
@@ -155,7 +157,7 @@ if __name__ == "__main__":
     new_ts = time.time() * 1000
 
     r = PushAnomalies(config, new_ts)
-    r.run(neworders, pms_data, ding)
+    r.run(all_neworders, all_pms_data, ding)#(neworders, pms_data, ding)
     # 更新 config 中的 'last_neworder_id' 和 'last_timestamp'
     config = r.update_config(config)
     with open('config.json', 'w', encoding='utf-8') as f:

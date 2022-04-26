@@ -1,0 +1,66 @@
+btcusdt: 2020-10-22 00:00:00 - 2022-04-22 16:06:52
+
+BTC-USD(Coin-M) listed @ 20200325; BTC-USDT(USDT-M) listed @ 20201021
+
+Introduction of the Indicators:
+	1. open_close_vol = (open - close)/close, represents volatility.
+	2. high_low_vol = (high - low)/low, represents volatility.
+	3. liquid_amount = amount, represents liquidity.
+	4. liquid_volume = volume, represents liquidity.
+	5. premium = [contract(close) - spot(close)]/spot(close), represents the premium of contract over spot.
+Funding Rate:
++----------------+--------------------------+--------------------------+
+|                |   Coin-Margined Contract |   USDT-Margined Contract |
+|----------------+--------------------------+--------------------------|
+| recent 1 week  |              3.94502e-05 |               0.00068598 |
+| recent 1 month |              0.000783858 |               0.00438043 |
+| recent 3 month |             -0.00031801  |               0.0109134  |
+| recent 6 month |              0.0123912   |               0.0398934  |
+| recent 1 year  |             -0.00176737  |               0.0183813  |
++----------------+--------------------------+--------------------------+
+
+5min Analyse Result:
+btcusdt: 2021-01-30 18:40:28 - 2022-04-25 18:18:52
+
+BTC-USD(Coin-M) listed @ 1611916828000; BTC-USDT(USDT-M) listed @ 1611916828000
+
+Introduction of the Indicators:
+	1. open_close_vol = (open - close)/close, represents volatility.
+	2. high_low_vol = (high - low)/low, represents volatility.
+	3. liquid_amount = amount, represents liquidity.
+	4. liquid_volume = volume, represents liquidity.
+	5. premium = [contract(close) - spot(close)]/spot(close), represents the premium of contract over spot.
+Funding Rate:
++----------------+--------------------------+--------------------------+
+|                |   Coin-Margined Contract |   USDT-Margined Contract |
+|----------------+--------------------------+--------------------------|
+| recent 1 week  |              0.00012968  |              7.05146e-05 |
+| recent 1 month |              0.000584755 |              0.00422211  |
+| recent 3 month |             -0.000517113 |              0.0107551   |
+| recent 6 month |             -0.000517113 |              0.0107551   |
+| recent 1 year  |             -0.00196647  |              0.018223    |
++----------------+--------------------------+--------------------------+
+
+5min Analyse Result:
+btcusdt: 2021-01-30 18:40:28 - 2022-04-26 10:53:22
+
+BTC-USD(Coin-M) listed @ 1611916828000; BTC-USDT(USDT-M) listed @ 1611916828000
+
+Introduction of the Indicators:
+	1. open_close_vol = (open - close)/close, represents volatility.
+	2. high_low_vol = (high - low)/low, represents volatility.
+	3. liquid_amount = amount, represents liquidity.
+	4. liquid_volume = volume, represents liquidity.
+	5. premium = [contract(close) - spot(close)]/spot(close), represents the premium of contract over spot.
+Funding Rate:
++----------------+--------------------------+--------------------------+
+|                |   Coin-Margined Contract |   USDT-Margined Contract |
+|----------------+--------------------------+--------------------------|
+| recent 1 week  |              0.000274365 |              0.000342452 |
+| recent 1 month |              0.00072944  |              0.00449405  |
+| recent 3 month |             -0.000372428 |              0.011027    |
+| recent 6 month |             -0.000372428 |              0.011027    |
+| recent 1 year  |             -0.00182179  |              0.0184949   |
++----------------+--------------------------+--------------------------+
+
+5min Analyse Result:
