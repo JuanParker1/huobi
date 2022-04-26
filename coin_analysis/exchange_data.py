@@ -61,6 +61,10 @@ class MarketKline():
         return spot, c_contract, u_contract
 
     def get_swap_create_timestamp(self, swap_code):
+        """
+        Returns:
+            10位的时间戳数据（int型）
+        """
         if self.exchange == 'huobi':
             creat_date = get_huobi_creat_timestamp(swap_code)
         elif self.exchange == 'okx':
@@ -71,7 +75,7 @@ class MarketKline():
         if self.exchange == 'huobi':
             spot_data = Huobi_kline(symbol=self.spot, period=period, start_time=start_time, end_time=end_time,
                                     get_full_market_data=True, col_with_asset_name=False)
-            spot_data.to_csv(r'C:\pythonProj\coin_analysis\{}_spot_{}_{}.csv'.format(self.exchange, self.spot, period))
+            spot_data.to_csv(r'C:\pythonProj\data\coin_analysis\{}_spot_{}_{}.csv'.format(self.exchange, self.spot, period))
             try:
                 c_contract_data = Huobi_kline(symbol=self.c_contract, period=period, start_time=start_time,
                                               end_time=end_time,
@@ -79,8 +83,8 @@ class MarketKline():
                 u_contract_data = Huobi_kline(symbol=self.u_contract, period=period, start_time=start_time,
                                               end_time=end_time,
                                               get_full_market_data=True, col_with_asset_name=False)
-                # u_contract_data.to_csv(r'C:\pythonProj\coin_analysis\u_contract_{}_{}.csv'.format(target, period))
-                # c_contract_data.to_csv(r'C:\pythonProj\coin_analysis\c_contract_{}_{}.csv'.format(target, period))
+                # u_contract_data.to_csv(r'C:\pythonProj\data\coin_analysis\u_contract_{}_{}.csv'.format(target, period))
+                # c_contract_data.to_csv(r'C:\pythonProj\data\coin_analysis\c_contract_{}_{}.csv'.format(target, period))
                 return spot_data, c_contract_data, u_contract_data
             except KeyError:
                 print('无相关合约')
@@ -88,7 +92,7 @@ class MarketKline():
         elif self.exchange == 'okx':
             spot_data = OKX_kline(symbol=self.spot, contract_type='spot', interval=period, start_time=start_time,
                                   end_time=end_time, is_fr=False)
-            spot_data.to_csv(r'C:\pythonProj\coin_analysis\{}_spot_{}_{}.csv'.format(self.exchange, self.spot, period))
+            spot_data.to_csv(r'C:\pythonProj\data\coin_analysis\{}_spot_{}_{}.csv'.format(self.exchange, self.spot, period))
             try:
                 c_contract_data = OKX_kline(symbol=self.c_contract, contract_type='swap', interval=period,
                                             start_time=start_time,
@@ -96,16 +100,16 @@ class MarketKline():
                 u_contract_data = OKX_kline(symbol=self.u_contract, contract_type='swap', interval=period, start_time=start_time,
                                             end_time=end_time, is_fr=False)
                 u_contract_data.to_csv(
-                    r'C:\pythonProj\coin_analysis\{}_u_contract_{}_{}.csv'.format(self.exchange, self.c_contract, period))
+                    r'C:\pythonProj\data\coin_analysis\{}_u_contract_{}_{}.csv'.format(self.exchange, self.c_contract, period))
                 c_contract_data.to_csv(
-                    r'C:\pythonProj\coin_analysis\{}_c_contract_{}_{}.csv'.format(self.exchange, self.u_contract, period))
+                    r'C:\pythonProj\data\coin_analysis\{}_c_contract_{}_{}.csv'.format(self.exchange, self.u_contract, period))
                 return spot_data, c_contract_data, u_contract_data
             except KeyError:
                 print('无相关合约')
                 return spot_data, None, None
 
-    def get_funding_rate(self, spot_code='btcusdt', start_time=None, end_time=None, period='4hour'):
-        """ 获取现货合约对于的 币本位、U本位永续合约的资金费率
+    def get_funding_rate(self, start_time=None, end_time=None, period='4hour'):
+        """ 获取 币本位、U本位永续合约的资金费率
 
         Args:
             target: 现货合约代码
@@ -119,8 +123,8 @@ class MarketKline():
                                             is_fr=True, col_with_asset_name=False)
                 u_contract_fr = Huobi_kline(symbol=self.u_contract, period=period, start_time=start_time, end_time=end_time,
                                             is_fr=True, col_with_asset_name=False)
-                # u_contract_data.to_csv(r'C:\pythonProj\coin_analysis\u_contract_{}_{}.csv'.format(target, period))
-                # c_contract_data.to_csv(r'C:\pythonProj\coin_analysis\c_contract_{}_{}.csv'.format(target, period))
+                # u_contract_data.to_csv(r'C:\pythonProj\data\coin_analysis\u_contract_{}_{}.csv'.format(target, period))
+                # c_contract_data.to_csv(r'C:\pythonProj\data\coin_analysis\c_contract_{}_{}.csv'.format(target, period))
                 c_contract_fr_close = c_contract_fr['close'].resample('8H').last()
                 u_contract_fr_close = u_contract_fr['close'].resample('8H').last()
                 funding_rate = pd.concat([c_contract_fr_close, u_contract_fr_close], axis=1,
@@ -135,8 +139,8 @@ class MarketKline():
                                           end_time=end_time, is_fr=True)
                 u_contract_fr = OKX_kline(symbol=self.u_contract, interval='4H', start_time=start_time, end_time=end_time,
                                           is_fr=True)
-                # u_contract_data.to_csv(r'C:\pythonProj\coin_analysis\u_contract_{}_{}.csv'.format(target, period))
-                # c_contract_data.to_csv(r'C:\pythonProj\coin_analysis\c_contract_{}_{}.csv'.format(target, period))
+                # u_contract_data.to_csv(r'C:\pythonProj\data\coin_analysis\u_contract_{}_{}.csv'.format(target, period))
+                # c_contract_data.to_csv(r'C:\pythonProj\data\coin_analysis\c_contract_{}_{}.csv'.format(target, period))
                 funding_rate = pd.concat([c_contract_fr, u_contract_fr], axis=1)
                 funding_rate.columns = ['Coin-Margined Contract', 'USDT-Margined Contract']
                 return funding_rate
@@ -163,8 +167,7 @@ def get_okx_create_timestamp(symbol='BTC-USDT-SWAP'):
     contract_url = url + '?instId={}&instType={}'.format(symbol, 'SWAP')
     response = requests.get(contract_url)
     create_date = response.json().get('data')[0].get('listTime')
-    print(datetime.fromtimestamp(int(create_date) // 1000))
-    return create_date
+    return int(create_date) // 1000
 
 
 def get_binance_create_date():
@@ -185,13 +188,9 @@ if __name__ == '__main__':
     print(spot, '\n', c_swap, '\n', u_swap)
     print(funding_rate)
 
-
-
-
     # start = int(time.time()) - 800 * 86400
     # period = '4H'  # '5m'
     # target = 'BTCUSDT'
     #
     # result_data = OKX_kline(symbol=target, interval=period, contract_type='SWAP', is_fr=True)
     # print(result_data)
-

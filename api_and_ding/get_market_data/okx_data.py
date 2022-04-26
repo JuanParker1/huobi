@@ -165,7 +165,7 @@ def OKX_kline(symbol='btcusdt', contract_type='swap', interval='1m', start_time=
 
 
 if __name__ == '__main__':
-    from exchange_data import *
+    from coin_analysis.exchange_data import *
     m = MarketKline(coinpair='btcusdt', exchange='okx')
     spot, c_swap, u_swap = m.spot, m.c_contract, m.u_contract
     print(spot, c_swap, u_swap)

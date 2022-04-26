@@ -156,9 +156,9 @@ if __name__ == '__main__':
     # # contract_url = "https://aws.okx.com/api/v5/market/mark-price-candles?instId={}&bar={}&limit=100".format(
     # #     symbol,interval)
     # print(contract_url)
-    # url = 'https://www.okex.me/api/general/v3/time'
-    # response = requests.get(contract_url)
-    # print(response.json())
+    contract_url = 'https://aws.okx.com/api/v5/market/history-candles?instId=BTC-USDT&bar=5m'
+    response = requests.get(contract_url)
+    print(response.json())
 
     # start_time = int(time.time()) - 80 * 86400
     # period = '4H'  # '5m'
