@@ -7,32 +7,17 @@
 """
 import time
 from datetime import datetime
+import re
 
 import pandas as pd
 import requests
-from api_and_ding.get_market_data.okx_data import *
+from api_and_ding.get_market_data.okx_data import OKX_kline
 from api_and_ding.get_market_data.huobi_data import Huobi_kline
+from api_and_ding.get_market_data.ftx_data import FTX_kline
+from other_codes.get_historical_data.binance_data import Binance_kline
 
-def get_time_interval(period='1m'):
-    if period == '1m':
-        time_interval = 60
-    elif period == '5m':
-        time_interval = 300
-    elif period == '15m':
-        time_interval = 900
-    elif period == '30m':
-        time_interval = 1800
-    elif period == '1H':
-        time_interval = 3600
-    elif period == '4H':
-        time_interval = 14400
-    elif period == '1D':
-        time_interval = 86400
-    else:
-        raise ValueError(f'invalid interval:{period}!')
-    return time_interval
 
-class MarketKline():
+class ExchangeData():
     def __init__(self, coinpair='btcusdt', exchange='huobi'):
         """
 
@@ -58,6 +43,14 @@ class MarketKline():
             spot = self.coinpair[:-4].upper() + '-' + self.coinpair[-4:].upper()
             c_contract = self.coinpair[:-4].upper() + '-' + self.coinpair[-4:-1].upper() + '-SWAP'  # 币本位永续 XXX-USD-SWAP
             u_contract = self.coinpair[:-4].upper() + '-' + self.coinpair[-4:].upper() + '-SWAP' # U 本位永续 XXX-USDT-SWAP
+        elif self.exchange == 'binance':
+            spot = c_contract = u_contract = self.coinpair.upper()
+            # c_contract = self.coinpair.upper() + '_PERP'  # 币本位永续 XXX-USD-SWAP
+            # u_contract = self.coinpair[:-4].upper() + '_PERP'  # U 本位永续 XXX-USDT-SWAP
+        elif self.exchange == 'ftx':
+            spot = self.coinpair[:-4].upper() + '/' + self.coinpair[-4:].upper()
+            contract = self.coinpair[:-4].upper() + '-PERP'
+            return spot, contract, None
         return spot, c_contract, u_contract
 
     def get_swap_create_timestamp(self, swap_code):
@@ -69,9 +62,13 @@ class MarketKline():
             creat_date = get_huobi_creat_timestamp(swap_code)
         elif self.exchange == 'okx':
             creat_date = get_okx_create_timestamp(swap_code)
+        elif self.exchange == 'binance':
+            creat_date = get_binance_create_timestamp(swap_code)
+        elif self.exchange == 'ftx':
+            creat_date = None
         return creat_date
 
-    def get_coin_data(self, period, start_time=None, end_time=None):
+    def get_coin_data(self, period='5m', start_time=None, end_time=None):
         if self.exchange == 'huobi':
             spot_data = Huobi_kline(symbol=self.spot, period=period, start_time=start_time, end_time=end_time,
                                     get_full_market_data=True, col_with_asset_name=False)
@@ -90,20 +87,53 @@ class MarketKline():
                 print('无相关合约')
                 return spot_data, None, None
         elif self.exchange == 'okx':
-            spot_data = OKX_kline(symbol=self.spot, contract_type='spot', interval=period, start_time=start_time,
+            spot_data = OKX_kline(symbol=self.spot,  interval=period, start_time=start_time,
                                   end_time=end_time, is_fr=False)
             spot_data.to_csv(r'C:\pythonProj\data\coin_analysis\{}_spot_{}_{}.csv'.format(self.exchange, self.spot, period))
             try:
-                c_contract_data = OKX_kline(symbol=self.c_contract, contract_type='swap', interval=period,
+                c_contract_data = OKX_kline(symbol=self.c_contract, interval=period,
                                             start_time=start_time,
                                             end_time=end_time, is_fr=False)
-                u_contract_data = OKX_kline(symbol=self.u_contract, contract_type='swap', interval=period, start_time=start_time,
+                u_contract_data = OKX_kline(symbol=self.u_contract, interval=period, start_time=start_time,
                                             end_time=end_time, is_fr=False)
                 u_contract_data.to_csv(
-                    r'C:\pythonProj\data\coin_analysis\{}_u_contract_{}_{}.csv'.format(self.exchange, self.c_contract, period))
+                    r'C:\pythonProj\data\coin_analysis\{}_u_contract_{}_{}.csv'.format(self.exchange, self.u_contract, period))
                 c_contract_data.to_csv(
-                    r'C:\pythonProj\data\coin_analysis\{}_c_contract_{}_{}.csv'.format(self.exchange, self.u_contract, period))
+                    r'C:\pythonProj\data\coin_analysis\{}_c_contract_{}_{}.csv'.format(self.exchange, self.c_contract, period))
                 return spot_data, c_contract_data, u_contract_data
+            except KeyError:
+                print('无相关合约')
+                return spot_data, None, None
+        elif self.exchange == 'binance':
+            reg = re.compile(r"\d+([a-zA-Z])")
+            period = reg.search(period).group(0)  # 将 1min 转化为 1m，1hour->1h，1day->1d
+            spot_data = Binance_kline(target=self.spot, interval=period, start_time=start_time, end_time=end_time,
+                                      get_full_market_data=True, col_with_asset_name=False)
+            try:
+                c_contract_data = Binance_kline(target=self.c_contract, contract_type='PERPETUAL', interval=period,
+                                                start_time=start_time, end_time=end_time, get_full_market_data=True,
+                                                col_with_asset_name=False)
+
+                u_contract_data = Binance_kline(target=self.u_contract, contract_type='PERPETUAL', interval=period,
+                                                start_time=start_time, end_time=end_time,  get_full_market_data=True,
+                                                col_with_asset_name=False)
+                u_contract_data.to_csv(
+                    r'C:\pythonProj\data\coin_analysis\{}_u_contract_{}_{}.csv'.format(self.exchange, self.u_contract, period))
+                c_contract_data.to_csv(
+                    r'C:\pythonProj\data\coin_analysis\{}_c_contract_{}_{}.csv'.format(self.exchange, self.c_contract, period))
+                return spot_data, c_contract_data, u_contract_data
+            except KeyError:
+                print('无相关合约')
+                return spot_data, None, None
+        elif self.exchange == 'ftx':
+            spot_data = FTX_kline(symbol=self.spot, interval=period, start_time=start_time, end_time=end_time,
+                                  adjust_time=True, is_fr=False)
+            try:
+                contract_data = FTX_kline(symbol=self.c_contract, interval=period, start_time=start_time,
+                                          end_time=end_time, is_fr=False)
+                contract_data.to_csv(
+                    r'C:\pythonProj\data\coin_analysis\{}_contract_{}_{}.csv'.format(self.exchange, self.u_contract, period))
+                return spot_data, contract_data, None
             except KeyError:
                 print('无相关合约')
                 return spot_data, None, None
@@ -139,14 +169,34 @@ class MarketKline():
                                           end_time=end_time, is_fr=True)
                 u_contract_fr = OKX_kline(symbol=self.u_contract, interval='4H', start_time=start_time, end_time=end_time,
                                           is_fr=True)
-                # u_contract_data.to_csv(r'C:\pythonProj\data\coin_analysis\u_contract_{}_{}.csv'.format(target, period))
-                # c_contract_data.to_csv(r'C:\pythonProj\data\coin_analysis\c_contract_{}_{}.csv'.format(target, period))
                 funding_rate = pd.concat([c_contract_fr, u_contract_fr], axis=1)
                 funding_rate.columns = ['Coin-Margined Contract', 'USDT-Margined Contract']
                 return funding_rate
             except KeyError:
                 print('未获取到相关合约')
                 return None
+
+        elif self.exchange == 'binance':
+            try:
+                c_contract_fr = Binance_kline(target=self.c_contract, interval='4h', contract_type='PERPETUAL',
+                                              start_time=start_time, end_time=end_time, is_fr=True,
+                                              get_full_market_data=True, col_with_asset_name=False)
+                u_contract_fr = Binance_kline(target=self.u_contract, interval='4h', contract_type='PERPETUAL',
+                                              start_time=start_time, end_time=end_time, is_fr=True,
+                                              get_full_market_data=True, col_with_asset_name=False)
+                funding_rate = pd.concat([c_contract_fr, u_contract_fr], axis=1)
+                funding_rate.columns = ['Coin-Margined Contract', 'USDT-Margined Contract']
+                return funding_rate
+            except KeyError:
+                print('未获取到相关合约')
+
+        elif self.exchange == 'ftx':
+            try:
+                funding_rate = FTX_kline(symbol=self.c_contract, interval='4hour', start_time=start_time,
+                                         end_time=end_time, is_fr=True)
+                return funding_rate
+            except KeyError:
+                print('无相关合约')
 
 
 def get_huobi_creat_timestamp(symbol='BTC-USDT'):
@@ -162,6 +212,19 @@ def get_huobi_creat_timestamp(symbol='BTC-USDT'):
     create_ts = int(time.mktime((int(create_date[:4]), int(create_date[4:6]), int(create_date[-2:]), 0, 0, 0, 0, 0, 0)))
     return create_ts
 
+
+def get_binance_create_timestamp(symbol='BTCUSDT'):
+    url = 'https://fapi.binance.com/fapi/v1/exchangeInfo'
+    # symbol = target[:-3].upper() + '-' + target[-3:].upper() + '-' + contract_type.upper()
+    contract_url = url  # + '?instId={}&instType={}'.format(symbol, contract_type.upper())
+    response = requests.get(contract_url)
+    res = response.json().get('symbols')
+    for i in res:
+        if i['symbol'] == symbol:
+            create_date = i.get('onboardDate')
+    return int(create_date) // 1000
+
+
 def get_okx_create_timestamp(symbol='BTC-USDT-SWAP'):
     url = 'https://aws.okx.com/api/v5/public/instruments'
     contract_url = url + '?instId={}&instType={}'.format(symbol, 'SWAP')
@@ -170,27 +233,29 @@ def get_okx_create_timestamp(symbol='BTC-USDT-SWAP'):
     return int(create_date) // 1000
 
 
-def get_binance_create_date():
-    ''
+def get_ftx_create_date():
     url = 'https://fapi.binance.com/fapi/v1/exchangeInfo'
     # symbol = target[:-3].upper() + '-' + target[-3:].upper() + '-' + contract_type.upper()
     contract_url = url  # + '?instId={}&instType={}'.format(symbol, contract_type.upper())
     response = requests.get(contract_url)
     create_date = response.json().get('symbols')[0].get('onboardDate')
-    print(datetime.fromtimestamp(int(create_date) // 1000))
     return create_date
 
 
 if __name__ == '__main__':
-    m = MarketKline(coinpair='btcusdt', exchange='huobi')
-    spot, c_swap, u_swap = m.get_coin_data(period='5min')
-    funding_rate = m.get_funding_rate()
-    print(spot, '\n', c_swap, '\n', u_swap)
-    print(funding_rate)
+    m = ExchangeData(coinpair='btcusdt', exchange='okx')
+    spot, c_swap, u_swap = m.spot, m.c_contract, m.u_contract
+    print(spot, c_swap, u_swap)
 
-    # start = int(time.time()) - 800 * 86400
-    # period = '4H'  # '5m'
-    # target = 'BTCUSDT'
-    #
-    # result_data = OKX_kline(symbol=target, interval=period, contract_type='SWAP', is_fr=True)
-    # print(result_data)
+    start = int(time.mktime((2022, 4, 26, 0, 0, 0, 0, 0, 0)))
+    period = '5min'  # '5m'
+
+    # result_data = OKX_kline(symbol=u_swap, interval=period, start_time=start, contract_type='SWAP')  # , is_fr=True
+    re = get_binance_create_timestamp()
+    print(re)
+
+    end_time = int(time.time())
+    # spot_data, c_contract_data, u_contract_data = m.get_coin_data(start_time=start, end_time=end_time,
+    #                                                               period=period)  # 'BTC-USDT-SWAP'
+    # print(spot_data.info())
+    # print(spot_data, '\n', c_contract_data, '\n', u_contract_data)
