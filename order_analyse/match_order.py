@@ -1,11 +1,6 @@
 import pandas as pd
 import numpy as np
-
-
-def get_data(path=r'data/sql_match_order/neworders.csv'):
-    neworders_data = pd.read_csv(path)
-    pms_data = pd.read_csv(path)
-
+from get_data_from_db import *
 
 class MatchOrder():
     def __init__(self, neworders, pms_data, interval=30):
@@ -100,15 +95,12 @@ class MatchOrder():
         return self.matched_data
 
 
-def get_all_matched_data():
-    pass
+
 
 
 if __name__ == "__main__":
-    neworders = pd.read_csv(r'C:\pythonProj\data\match_order\neworders.csv')
-    pms_data = pd.read_csv(r'C:\pythonProj\data\match_order\pms_executions_spot.csv')
-    neworders = neworders.set_index('quote_accept_time').sort_index()
-    pms_data = pms_data.set_index('exec_place_time').sort_index()
+    neworders = get_current_data_from_db(table='neworders')
+    pms_data = get_current_data_from_db(table='pms_executions_spot')
 
     interval = 600
     m = MatchOrder(neworders, pms_data, interval)
@@ -119,8 +111,8 @@ if __name__ == "__main__":
     all_matched[['exec_place_time', 'match']] = matched_data[['exec_place_time', 'match']]
     all_matched = pd.merge(all_matched, pms_data, left_on='exec_place_time', right_index=True, how='left')
 
-    all_matched.to_csv(r'C:\pythonProj\data\match_order\matched_data_all_{}s.csv'.format(interval))
-    matched_data.to_csv(r'C:\pythonProj\data\match_order\matched_data_{}s.csv'.format(interval))
+    # all_matched.to_csv(r'C:\pythonProj\data\match_order\matched_data_all_{}s.csv'.format(interval))
+    # matched_data.to_csv(r'C:\pythonProj\data\match_order\matched_data_{}s.csv'.format(interval))
     print(f"在 {interval}s 时间间隔下，共 {len(neworders)} 条数据，匹配上 {len(matched_data['exec_place_time'].dropna())} 条"\
           f"（其中 base coin 也匹配的有 {len(matched_data[matched_data['match']=='YES'])} 条）")
 

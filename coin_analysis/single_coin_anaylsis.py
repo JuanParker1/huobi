@@ -230,7 +230,7 @@ def add_table_to_txt(df, data_name='spot', file_name="result_report.txt"):
 if __name__ == '__main__':
     start_time = int(time.mktime((2022, 4, 15, 0, 0, 0, 0, 0, 0)))
     end_time = int(time.mktime((2022, 4, 26, 0, 0, 0, 0, 0, 0)))
-    target = 'btcusdt'  # 现货交易对代码
+    target = 'filusdt'  # 现货交易对代码
     exchanges = ['huobi', 'binance', 'okx', 'ftx']
 
     # 报告的头文件：主要为指标说明
@@ -240,7 +240,7 @@ if __name__ == '__main__':
     list_date = get_list_date_of_exchanges(exchanges=exchanges)
     add_table_to_txt(list_date, data_name='List Date', file_name=report_filename)
 
-    for exchange in exchanges[3:]:
+    for exchange in exchanges[:]:
         c = CoinAnalysis(target=target, exchange=exchange, start_time=start_time, end_time=end_time)  # ,
         c.analyse_and_save_to_txt(report_filename=report_filename)
 

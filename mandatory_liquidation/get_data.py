@@ -1,7 +1,7 @@
 import time
 import pandas as pd
 
-from other_codes.get_historical_data.huobi_data import Huobi_kline
+from api_and_ding.get_market_data.huobi_data import Huobi_kline
 
 
 coins = ['btcusdt', 'ethusdt', 'trxusdt', 'shibusdt', 'solusdt', 'dotusdt',

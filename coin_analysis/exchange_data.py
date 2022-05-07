@@ -14,7 +14,7 @@ import requests
 from api_and_ding.get_market_data.okx_data import OKX_kline
 from api_and_ding.get_market_data.huobi_data import Huobi_kline
 from api_and_ding.get_market_data.ftx_data import FTX_kline
-from other_codes.get_historical_data.binance_data import Binance_kline
+from api_and_ding.get_market_data.binance_data import Binance_kline
 
 
 class ExchangeData():
