@@ -2,8 +2,8 @@
     "interval": 300,
     "percentile": 95,
     "ding": {
-        "secret": "SEC8847c2eb4980651aceb5dca50daa713373c7276440395ee81be6f8d11c655902",
-        "url": "https://oapi.dingtalk.com/robot/send?access_token=2de56dc81131b65b3160fd6f2c958d51da2181a6c8857795db8936b01ea01284"
+        "secret": "SEC152f308b49c00490b59d498f50eb7ce3b9382dff7cb8c8b44cb6f072c435abe5",
+        "url": "https://oapi.dingtalk.com/robot/send?access_token=800ce56822d8e4c3cc9eb241916c9c093a97409e54cb90833f909f9847a7e1f9"
     },
     "last_neworder_id": 5986,
     "last_timestamp": 1648544298685,
